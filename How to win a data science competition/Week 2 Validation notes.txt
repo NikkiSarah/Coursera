@@ -1,0 +1,35 @@
+Validation and overfitting
+
+1. Validation helps with model quality evaluation.
+2. Validation helps with model selection with respect to performance on unseen data.
+3. Underfitting refers to not capturing enough patterns in the data.
+4. Generally overfitting refers to:
+	- capturing noise
+	- capturing patterns that do not generalise to the test/unseen data
+5. In competitions, overfitting refers to:
+	- unexpected low performance on unseen test data given the validation scores
+
+Validation strategies
+
+There are thee main validation strategies:
+1. Holdout
+	- sufficient amount of data
+	- likely to get similar scores and the same hyperparameters for different splits
+2. KFold
+	- likely to get different scores and hyperparameters for different splits
+3. Leave-one-out
+	- only a small data sample
+
+Stratification - can make validation more stable and is particularly useful for small and unbalanced datasets.
+
+Data splitting strategies
+
+1. In most cases, the data is split by one (or a combination) of these methods:
+	- Row number
+	- Time
+	- Id
+2. Knowledge of the data splitting strategy will help to information feature generation logic and build a robust model validation approach.
+3. Validation should be set up to mimic the train/test split of the competition.
+
+Validation problems
+

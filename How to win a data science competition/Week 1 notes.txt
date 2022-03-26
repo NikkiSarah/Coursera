@@ -1,0 +1,77 @@
+Recap of the main ML algorithms
+
+- There is no silver bullet algorithm that will outperform all the others in every task
+- The linear model can be imagined as splitting space into two sub-spaces separated by a hyperplane.
+- Tree-based methods ethods split space into boxes and uses constant predictions in every box.
+- kNN methods are based on the assumptions that close objects are likely to have the same labels. So we need to find the closest objects and pick their labels. Also, kNN approach heavily relies on how to measure point closeness.
+- Feed-forward neural nets are harder to interpret but they produce smooth non-linear decision boundary.
+- The most powerful methods are **gradient boosted decision trees** and **neural networks**. But we shouldn't underestimate linear models and kNN because sometimes they may be better.
+
+
+Feature Preprocessing and Generation
+
+- Feature preprocessing is a necessary instrument you have to use to adapt data to your model.
+- Feature generation is a very powerful technique that can aid you significantly in competitions and sometimes give you the required edge.
+- Both feature preprocessing and feature generation depend on the model you are going to use.
+
+Numeric features
+
+- The impact of feature preprocessing is different for different models.
+	- Tree-based models don't depend on scaling, while non-tree-based models very much depend on it.
+- The most-often used pre-processing methods are:
+	- MinMaxScaler to [0,1]
+	- StandardScaler to mean = 0 and sd = 1
+	- Rank - sets spaces between sorted values ot be equal
+	- np.log(1+x) and np.sqrt(1+x)
+- We can treat scaling as an important hyperparameter in cases when the choice of scaling impacts the quality of the predictions.
+- Feature generation is powered by an understanding of the data i.e.:
+	- Prior knowledge
+	- EDA
+
+Categorical and ordinal features
+
+- Ordinal features are a special case of a categorical feature in which values are in some meaningful order.
+- Label encoding maps categories to numbers.
+- Frequency encoding maps categories to their frequencies.
+- Label encoding and frequency encoding are often used for tree-based methods.
+- One-hot encoding is often used for non-tree-based-methods.
+- Applying OHE to combinations of categorical features can help non-tree-based methods like linear models and KNN by allowing them to use feature interactions.
+
+Datetime and coordinates
+
+1. Datetime
+	- periodicity i.e. time of day, month etc
+	- time since row-independent/dependent event
+	- difference between two datetime features
+2. Coordinates
+	- extracting/using interesting places from train/test data or additional data
+	- calculating distance from cluster centres
+	- adding aggregated statistics
+
+Missing values
+
+1. The choice of method to fill missing values depends on the situation.
+2. Sometimes they can be reconstructed but the usual approach is to replace them with a value outside the feature range like -999, or the mean or median
+3. A binary flag indicating which rows have missing values can sometimes be beneficial.
+4. In general, avoid filling missing values before feature generation as it can reduce the usefullness of the features.
+5. xgboost can handle missing values natively, which can improve prediction accuracy.
+
+
+Feature Extraction from Text and Images
+
+1. Apply preprocessing - lowercase, stemming, lemmatisation and stopword removal
+
+2. Proceed with bag of words or word2vec approach
+- BoW guarantees clear interpretation. Each feature is tuned by having a large amount of features; one for each unique word (i.e. huge vectors).
+- Ngrams can help by indicating word interactions in the text.
+- TfiDF can be applied to post-process metrics produced by BoW
+
+- Word2Vec produces relatively small vectors and the meaning of each feature value can be hazy.
+- Words with similar meanings will have similar vector representations (Can be crucial in competitions).
+
+
+3. Images
+- Pre-trained CNNs can be used to extract features, but a careful selection is critical.
+- Fine-tuning can often help and data augmention can help with model improvement.
+
+
