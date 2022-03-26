@@ -9,6 +9,7 @@ Validation and overfitting
 5. In competitions, overfitting refers to:
 	- unexpected low performance on unseen test data given the validation scores
 
+
 Validation strategies
 
 There are thee main validation strategies:
@@ -22,6 +23,7 @@ There are thee main validation strategies:
 
 Stratification - can make validation more stable and is particularly useful for small and unbalanced datasets.
 
+
 Data splitting strategies
 
 1. In most cases, the data is split by one (or a combination) of these methods:
@@ -31,5 +33,20 @@ Data splitting strategies
 2. Knowledge of the data splitting strategy will help to information feature generation logic and build a robust model validation approach.
 3. Validation should be set up to mimic the train/test split of the competition.
 
-Validation problems
 
+Problems during validation
+
+1. If there is a big dispersion of scores during the validation stage, an extensive validation should be performed
+	- average scores from different KFold splits
+	- tune model on one split and evaluate model performance on another
+2. If the submission's score does not closely match the local validation score
+	- check the amount of data available in the public leaderboard (i.e is there not enough?)
+	- check if the model has overfitted
+	- check if the correct splitting strategy was chosen
+	- check if the train and test sets have different distributions
+3. Expect a large leaderboard shuffle if:
+	- there is randomness
+	- there are small datasets involved
+	- the distributions of the public and private datasets are different
+
+Above all, the main takeaway is the absolute importance of mimicing the train-test split.

@@ -14,6 +14,7 @@ Feature Preprocessing and Generation
 - Feature generation is a very powerful technique that can aid you significantly in competitions and sometimes give you the required edge.
 - Both feature preprocessing and feature generation depend on the model you are going to use.
 
+
 Numeric features
 
 - The impact of feature preprocessing is different for different models.
@@ -28,6 +29,7 @@ Numeric features
 	- Prior knowledge
 	- EDA
 
+
 Categorical and ordinal features
 
 - Ordinal features are a special case of a categorical feature in which values are in some meaningful order.
@@ -36,6 +38,7 @@ Categorical and ordinal features
 - Label encoding and frequency encoding are often used for tree-based methods.
 - One-hot encoding is often used for non-tree-based-methods.
 - Applying OHE to combinations of categorical features can help non-tree-based methods like linear models and KNN by allowing them to use feature interactions.
+
 
 Datetime and coordinates
 
@@ -47,6 +50,7 @@ Datetime and coordinates
 	- extracting/using interesting places from train/test data or additional data
 	- calculating distance from cluster centres
 	- adding aggregated statistics
+
 
 Missing values
 
@@ -69,9 +73,6 @@ Feature Extraction from Text and Images
 - Word2Vec produces relatively small vectors and the meaning of each feature value can be hazy.
 - Words with similar meanings will have similar vector representations (Can be crucial in competitions).
 
-
 3. Images
 - Pre-trained CNNs can be used to extract features, but a careful selection is critical.
 - Fine-tuning can often help and data augmention can help with model improvement.
-
-

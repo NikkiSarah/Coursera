@@ -8,10 +8,12 @@ Exploratory Data Analysis
 - check if the data is intuitive and agrees with the domain knowledge
 - understand how the data was generated as it's crucial to establishing an appropriate model validation strategy
 
+
 Anonymised data
 
 - sometimes it's possible to decode the features and uncover the true meaning
 - guess the feature type to perform appropriate pre-processing
+
 
 Visualisations
 
