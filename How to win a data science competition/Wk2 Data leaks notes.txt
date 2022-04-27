@@ -1,0 +1,13 @@
+Basic data leaks
+
+Unexpected information from:
+	- meta data
+	- row ID information
+	- row order
+
+
+Leaderboard probing and rare data leaks
+
+
+
+

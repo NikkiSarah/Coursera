@@ -1,6 +1,6 @@
 Validation strategies
 
-This page contains information about main validation strategies (schemes): holdout, K-Fold, LOO.
+This page contains information about main validation strategies (schemes): **holdout**, **K-Fold**, **LOO**.
 
 The main rule you should know — never use data you train on to measure the quality of your model. The trick is to split all your data into training and validation sets. 
 

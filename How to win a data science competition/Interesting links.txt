@@ -1,0 +1,9 @@
+https://flyyufelix.github.io/2016/10/08/fine-tuning-in-keras-part2.html
+
+https://sebastianraschka.com/Articles/2014_about_feature_scaling.html
+
+http://www.chioka.in/how-to-select-your-final-models-in-a-kaggle-competitio/
+
+https://www.kaggle.com/docs/competitions#leakage
+
+https://www.kaggle.com/code/dansbecker/data-leakage/notebook
