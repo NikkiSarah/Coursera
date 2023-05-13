@@ -1,0 +1,9 @@
+a) select		138
+b) select projects	110
+c) union		324
+d) count		58
+e) big documents	11
+f) two words		3
+g) multiply		57
+h) similarity matrix	19
+i) keyword search	6

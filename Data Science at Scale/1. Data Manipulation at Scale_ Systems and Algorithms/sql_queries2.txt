@@ -1,0 +1,77 @@
+-- multiply A and B
+-- SELECT
+--     A.row_num,
+--     A.col_num,
+--     A.value,
+--     B.value,
+--     A.value * B.value
+-- FROM A
+-- INNER JOIN B
+-- ON A.row_num = B.row_num AND A.col_num = B.col_num;
+
+-- find the similarity value of the two documents '10080_txt_crude' and '17035_txt_earn'
+-- select y.CategoryID, 
+--     y.CategoryName,
+--     round(x.actual_unit_price, 2) as "Actual Avg Unit Price",
+--     round(y.planned_unit_price, 2) as "Would-Like Avg Unit Price"
+-- from
+-- (
+--     select avg(a.UnitPrice) as actual_unit_price, c.CategoryID
+--     from order_details as a
+--     inner join products as b on b.ProductID = a.ProductID
+--     inner join categories as c on b.CategoryID = c.CategoryID
+--     group by c.CategoryID
+-- ) as x
+-- inner join 
+-- (
+--     select a.CategoryID, b.CategoryName, avg(a.UnitPrice) as planned_unit_price
+--     from products as a
+--     inner join categories as b on b.CategoryID = a.CategoryID
+--     group by a.CategoryID
+-- ) as y on x.CategoryID = y.CategoryID
+SELECT SUM(mult) FROM (
+    SELECT
+        term,
+        FC.count,
+        FE.count,
+        (FC.count * FE.count) AS mult
+    FROM (
+        SELECT *
+        FROM Frequency
+        WHERE docid = '10080_txt_crude'
+    ) AS FC
+    INNER JOIN
+    (SELECT *
+     FROM Frequency
+     WHERE docid = '17035_txt_earn'
+    ) AS FE
+    USING (term)
+);
+
+-- find the best matching document to the keyword query "washington taxes treasury"
+SELECT
+    docid,
+    SUM(mult) AS similarity
+FROM (
+    SELECT
+        f.docid,
+        term,
+        f.count,
+        q.count,
+        (f.count * q.count) AS mult
+    FROM (
+        SELECT *
+        FROM Frequency
+        ) AS f
+    INNER JOIN
+    (SELECT 'q' as docid, 'washington' as term, 1 as count
+     UNION
+     SELECT 'q' as docid, 'taxes' as term, 1 as count
+     UNION 
+     SELECT 'q' as docid, 'treasury' as term, 1 as count
+     ) AS q
+    USING (term)
+)
+GROUP BY docid
+ORDER BY similarity DESC
+LIMIT 5;

@@ -1,0 +1,48 @@
+-- σdocid=10398_txt_earn(frequency)
+SELECT COUNT(*)
+FROM Frequency
+WHERE docid = "10398_txt_earn";
+
+-- πterm(σdocid=10398_txt_earn and count=1(frequency))
+SELECT COUNT(term)
+FROM Frequency
+WHERE docid = "10398_txt_earn" AND count = 1;
+
+-- πterm(σdocid=10398_txt_earn and count=1(frequency)) U πterm(σdocid=925_txt_trade and count=1(frequency))
+SELECT COUNT(*) FROM (
+    SELECT term
+    FROM Frequency
+    WHERE docid = "10398_txt_earn" AND count = 1
+
+    UNION
+
+    SELECT term
+    FROM Frequency
+    WHERE docid = "925_txt_trade" AND count = 1
+);
+
+-- count the number of unique documents containing the word "law" or containing the word "legal"
+SELECT COUNT(DISTINCT docid)
+FROM Frequency
+WHERE term = "law" OR term = "legal";
+
+-- find all documents that have more than 300 total terms
+SELECT COUNT(*) FROM (
+    SELECT docid, COUNT(term)
+    FROM Frequency
+    GROUP BY docid
+    HAVING COUNT(term) > 300
+);
+
+-- count the number of unique documents that contain both the word 'transactions' and the word 'world'
+SELECT COUNT(*) FROM (
+    SELECT docid
+    FROM Frequency
+    WHERE term = 'transactions'
+
+    INTERSECT
+
+    SELECT docid
+    FROM Frequency
+    WHERE term = 'world'
+)
