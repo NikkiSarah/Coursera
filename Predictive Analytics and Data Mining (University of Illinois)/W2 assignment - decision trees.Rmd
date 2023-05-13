@@ -1,0 +1,293 @@
+---
+title: "Module 2 Assignment - Decision Trees"
+output: html_document
+date: "2023-05-11"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r libraries, include=FALSE}
+library(tidyverse)
+library(tidymodels)
+
+library(rpart)
+library(rpart.plot)
+library(caret)
+```
+
+This is a rendered R Markdown document, which means that I coded my responses directly using R instead of in a GUI interface like Rattle. Please keep this in mind when marking my assignment as my results could therefore be different to the provided answer key. I have included my code (where relevant) to help in the peer review.
+
+## Step 1: Download and process the data
+
+```{r data, echo=FALSE}
+spam <- read_csv("spam.csv", col_types = list(col_skip()), show_col_types = FALSE)
+spam$yesno <- factor(spam$yesno)
+glimpse(spam)
+```
+
+## Step 2: Split the data and create a decision tree
+
+```{r dt1}
+# I'm aware this is possibly not quite the correct way to be doing this
+set.seed(0)
+data_split <- initial_split(spam, prop = 0.70, strata = yesno)
+train_data <- training(data_split)
+val_test_data <- testing(data_split)
+
+data_split2 <- initial_split(val_test_data, prop = 0.5, strata = yesno)
+val_data <- training(data_split2)
+test_data <- testing(data_split2)
+
+dt_mod <- decision_tree() %>% 
+  set_mode("classification") %>% 
+  set_engine("rpart")
+
+dt_wflow <- workflow() %>% 
+  add_model(dt_mod) %>% 
+  add_formula(yesno ~.) %>% 
+  fit(data = train_data)
+
+fitted_dt <- dt_wflow %>% extract_fit_parsnip()
+fitted_dt
+rpart.plot(fitted_dt$fit, roundint = FALSE)
+```
+
+To interpret the decision tree results, we node that each node is identified by a number, followed by a split rule, the number of observations at that node, the number of missclassified observations, the default classification for that node, and the the distribution of classes across that node.
+
+The first three rules from the plot above are as follows:
+
+1. *root 3220 1269 n (0.6059006 0.3940994)* : Assign every choice to "n" or "not spam". Doing so will result in an accuracy of 60.6% as there are 1,951 spam (out of a total 3,220) records in the dataset.
+2. *dollar< 0.0445 2396  552 n (0.7696160 0.2303840)* : If `dollar` is less than 0.0445; that is, if the number of occurrences of the $ symbol is less than 0.0445, then assigning every record to "n" will result in an accuracy of 77.0%.
+3. *bang< 0.0795 1670  168 n (0.8994012 0.1005988)* : If `bang` is less than 0.0795; that is, if the number of occurences of the ! symbol is less than 0.0795, then assigning every record to "n" will result in an accuracy of 89.9%.
+
+## Step 3: Evaluate the decision tree performance
+
+```{r dt-perf}
+train_preds <- predict(fitted_dt, new_data = train_data)
+val_preds <- predict(fitted_dt, new_data = val_data)
+
+train_results <- cbind(train_data$yesno, train_preds) %>% 
+  rename(truth = `train_data$yesno`)
+metrics(train_results, truth, .pred_class)
+
+val_results <- cbind(val_data$yesno, val_preds) %>% 
+  rename(truth = `val_data$yesno`)
+metrics(val_results, truth, .pred_class)
+```
+
+The model's accuracy on the training data with default parameters was 85.7% and 83.0% on the validation data (error rates of 14.3% and 17% respectively). This indicated that there was little evidence of high variance (model overfitting), but some evidence of bias (model underfitting) as the error or missclassification rate was around 15% in both cases.
+
+## Step 4: Observe the effect on performance by changing the hyperparameters
+
+Note that in this step, I was not able to manipulate the `minbucket` hyperparameter as `tidymodels` does not include that hyperparameter as an option.
+
+```{r cost-complexity}
+cp_grid <- grid_regular(cost_complexity(), levels = 10)
+cp_df <- data.frame()
+
+for (i in 1:nrow(cp_grid)) {
+  cp_val <- cp_grid[i,]
+  
+  dt_mod <- decision_tree(cost_complexity = cp_val) %>% 
+    set_mode("classification") %>% 
+    set_engine("rpart")
+
+  dt_wflow <- workflow() %>% 
+    add_model(dt_mod) %>% 
+    add_formula(yesno ~.) %>% 
+    fit(data = train_data)
+
+  fitted_dt <- dt_wflow %>% extract_fit_parsnip()
+  
+  train_preds <- predict(fitted_dt, new_data = train_data)
+  val_preds <- predict(fitted_dt, new_data = val_data)
+  
+  train_results <- cbind(train_data$yesno, train_preds) %>% 
+    rename(truth = `train_data$yesno`)
+  
+  val_results <- cbind(val_data$yesno, val_preds) %>% 
+    rename(truth = `val_data$yesno`)
+  
+  train_acc <- metrics(train_results, truth, .pred_class)[1,3]
+  val_acc <- metrics(val_results, truth, .pred_class)[1,3]
+  
+  new_row <- data.frame(cost_complexity = cp_val,
+                        train_error = 1 - train_acc,
+                        validation_error = 1 - val_acc)
+  cp_df <- rbind(cp_df, new_row)
+}
+
+names(cp_df) <- c("cost_complexity", "train", "validation")
+```
+
+```{r plot1, echo=FALSE}
+cp_df %>% 
+  pivot_longer(!cost_complexity, names_to = "data", values_to = "error_rate") %>% 
+  arrange(cost_complexity) %>% 
+  ggplot(aes(x = cost_complexity, y = error_rate, group = data, colour = data)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 4) +
+  scale_x_log10(n.breaks = 10) +
+  scale_colour_manual(name = "Dataset", values = c("darkcyan", "darkred")) +
+  labs(x = "cost complexity", y = "error rate",
+       title = "Average model error across different cost complexity values") +
+  theme_classic()
+```
+
+```{r min-n}
+n_grid <- grid_regular(min_n(), levels = 10)
+n_df <- data.frame()
+
+for (i in 1:nrow(n_grid)) {
+  n_val <- n_grid[i,]
+  
+  dt_mod <- decision_tree(min_n = n_val) %>% 
+    set_mode("classification") %>% 
+    set_engine("rpart")
+
+  dt_wflow <- workflow() %>% 
+    add_model(dt_mod) %>% 
+    add_formula(yesno ~.) %>% 
+    fit(data = train_data)
+
+  fitted_dt <- dt_wflow %>% extract_fit_parsnip()
+  
+  train_preds <- predict(fitted_dt, new_data = train_data)
+  val_preds <- predict(fitted_dt, new_data = val_data)
+  
+  train_results <- cbind(train_data$yesno, train_preds) %>% 
+    rename(truth = `train_data$yesno`)
+  
+  val_results <- cbind(val_data$yesno, val_preds) %>% 
+    rename(truth = `val_data$yesno`)
+  
+  train_acc <- metrics(train_results, truth, .pred_class)[1,3]
+  val_acc <- metrics(val_results, truth, .pred_class)[1,3]
+  
+  new_row <- data.frame(min_n = n_val,
+                        train_error = 1 - train_acc,
+                        validation_error = 1 - val_acc)
+  n_df <- rbind(n_df, new_row)
+}
+
+names(n_df) <- c("min_n", "train", "validation")
+```
+
+```{r plot2, echo=FALSE}
+n_df %>% 
+  pivot_longer(!min_n, names_to = "data", values_to = "error_rate") %>% 
+  arrange(min_n) %>% 
+  ggplot(aes(x = min_n, y = error_rate, group = data, colour = data)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 4) +
+  scale_colour_manual(name = "Dataset", values = c("darkcyan", "darkred")) +
+  labs(x = "min n", y = "error rate",
+       title = "Average model error across different minimal node size values") +
+  theme_classic()
+```
+
+```{r tree-depth}
+depth_grid <- grid_regular(tree_depth(), levels = 10)
+depth_df <- data.frame()
+
+for (i in 1:nrow(depth_grid)) {
+  depth_val <- depth_grid[i,]
+  
+  dt_mod <- decision_tree(tree_depth = depth_val) %>% 
+    set_mode("classification") %>% 
+    set_engine("rpart")
+
+  dt_wflow <- workflow() %>% 
+    add_model(dt_mod) %>% 
+    add_formula(yesno ~.) %>% 
+    fit(data = train_data)
+
+  fitted_dt <- dt_wflow %>% extract_fit_parsnip()
+  
+  train_preds <- predict(fitted_dt, new_data = train_data)
+  val_preds <- predict(fitted_dt, new_data = val_data)
+  
+  train_results <- cbind(train_data$yesno, train_preds) %>% 
+    rename(truth = `train_data$yesno`)
+  
+  val_results <- cbind(val_data$yesno, val_preds) %>% 
+    rename(truth = `val_data$yesno`)
+  
+  train_acc <- metrics(train_results, truth, .pred_class)[1,3]
+  val_acc <- metrics(val_results, truth, .pred_class)[1,3]
+  
+  new_row <- data.frame(tree_depth = depth_val,
+                        train_error = 1 - train_acc,
+                        validation_error = 1 - val_acc)
+  depth_df <- rbind(depth_df, new_row)
+}
+
+names(depth_df) <- c("tree_depth", "train", "validation")
+```
+
+```{r plot3, echo=FALSE}
+depth_df %>% 
+  pivot_longer(!tree_depth, names_to = "data", values_to = "error_rate") %>% 
+  arrange(tree_depth) %>% 
+  ggplot(aes(x = tree_depth, y = error_rate, group = data, colour = data)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 4) +
+  scale_colour_manual(name = "Dataset", values = c("darkcyan", "darkred")) +
+  labs(x = "tree depth", y = "error rate",
+       title = "Average model error across different tree depths") +
+  theme_classic()
+```
+
+Ok, so these three graphics are very different and quite interesting. In the first, we observed the effect of increasing the value of the cost complexity hyperparameter from 1e-10 to 0.01. The results indicated that small values of the hyperparameter had no effect on the error rate, but it started increasing when the values was equal to or greater than 1e-4 (albeit with an interesting temporary initial drop for the validation data). The separation between the two lines also indicated some variance, although that decreased to near zero for larger values of the hyperparameter. In addition, the error rate was a little way away from zero, indicating the presence of some bias in the mode, which increased as the cost complexity hyperparameter also increased.
+
+In the second chart, we observed the effect of changing the minimal node size. The error rates for both the training and validation datasets remained constant, indicating there was no impact on the model. The values on the y-axis indicate that the error rates are very close together so there is little variance in the model, but as with the cost complexity experiment, there is still some bias present given that the error rate is non-zero (albeit relatively small).
+
+In the final chart, we observed the effect of changing the tree depth. The error rates for both the training and validation datasets declined quickly as tree depth increased until a depth of 4, where there was no further improvement. The lines are reasonably close together, indicating little evidence of variance in the mode, but still some bias given the non-zero error rates.
+
+## Step 5: Train and compare a random forest model
+
+```{r random-forest, cache=TRUE}
+data_split = initial_split(spam, strata = yesno, prop = 0.85)
+training_data = training(data_split)
+test_data = testing(data_split)
+
+data_split2 = validation_split(training_data, strata = yesno, prop = 0.82)
+
+rf_mod <- rand_forest(mtry = tune(), trees = 1000, min_n = tune()) %>% 
+  set_engine("ranger") %>% 
+  set_mode("classification") 
+
+rf_wflow <- workflow() %>% 
+  add_model(rf_mod) %>% 
+  add_formula(yesno ~.) %>% 
+  fit(data = train_data)
+
+rf_tune <- rf_wflow %>% 
+  tune_grid(data_split2,
+            grid = 50,
+            control = control_grid(save_pred = TRUE),
+            metrics = metric_set(accuracy))
+```
+
+```{r}
+# finalise with the best model
+final_rf <- finalize_workflow(rf_wflow, select_best(rf_tune))
+
+fitted_rf <- last_fit(final_rf, data_split)
+train_preds <- predict(fitted_rf$.workflow[[1]], new_data = train_data)
+val_preds <- predict(fitted_rf$.workflow[[1]], new_data = val_data)
+
+train_results <- cbind(train_data$yesno, train_preds) %>% 
+  rename(truth = `train_data$yesno`)
+metrics(train_results, truth, .pred_class)
+
+val_results <- cbind(val_data$yesno, val_preds) %>% 
+  rename(truth = `val_data$yesno`)
+metrics(val_results, truth, .pred_class)
+```
+
+The trained and tuned random forest model was able to achieve accuracy of 95.1% on the training data and 96.1% on the validation data (error rates of 4.9% and 3.9% respectively), compared to an error rate of between 14.3% and 17.0% for the baseline decision tree. It shows the the additional complexity offered by the random forest model leads to superior performance in this case, although at the cost of reduced interpretability as you cannot examine the individual decisions/rules as per a single decision tree.
