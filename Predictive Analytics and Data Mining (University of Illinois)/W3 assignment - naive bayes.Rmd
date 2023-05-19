@@ -1,0 +1,74 @@
+---
+title: "Module 3 Assignment - Naive Bayes"
+output: html_document
+date: "2023-05-14"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r libraries}
+library(tidyverse)
+library(tidymodels)
+library(discrim)
+```
+
+## Step 1: Download and process the data
+
+Here, we have read in the data, excluding the first index column and converted the outcome variable `priceClass` into an ordered factor.
+
+```{r data, echo=FALSE}
+re_data <- read_csv("real_estate.csv", col_types = list(col_skip()), show_col_types = FALSE)
+re_data$priceClass <- factor(re_data$priceClass,
+                             levels = c("Low", "Medium", "High"),
+                             ordered = TRUE)
+glimpse(re_data)
+```
+
+## Step 2: Split the data
+
+In this step we have split the data into a training and testing set using an 80/20 split and stratified the outcome variable to ensure the distribution of outcome classes is not only similar across the training and testing sets, but representative of the original data.
+
+```{r data_split}
+set.seed(101)
+
+data_split <- initial_split(re_data, prop = 0.80, strata = priceClass)
+train_data <- training(data_split)
+test_data <- testing(data_split)
+```
+
+# Step 3: Prepare and fit the model
+
+A Naive Bayes algorithm doesn't require any special pre-processing such as variable normalisation and is able to natively handle categorical predictors (if there were any) as long as they're converted from a character to factor data type.
+
+```{r model}
+nb_spec <- naive_Bayes() %>% 
+  set_mode("classification") %>% 
+  set_engine("klaR")
+
+nb_wflow <- workflow() %>% 
+  add_model(nb_spec) %>% 
+  add_formula(priceClass ~.)
+
+fitted_nb <- nb_wflow %>% fit(data = train_data)
+fitted_nb
+```
+
+# Step 4: Evaluate model performance
+
+The following code used the fitted model to make predictions on the training and test data and assessed model accuracy. The results were almost identical: 73.4% on the training data and 73.3% on the test data. This indicates that there is little evidence of model overfitting, but the low accuracy indicates there may be underfitting occurring and hence a more complex model may be more appropriate.
+
+```{r evaluate, cache=TRUE}
+train_aug <- augment(fitted_nb, train_data)
+head(train_aug)
+
+metrics(train_aug, priceClass, .pred_class)
+
+test_aug <- augment(fitted_nb, test_data)
+head(test_aug)
+
+metrics(test_aug, priceClass, .pred_class)
+```
