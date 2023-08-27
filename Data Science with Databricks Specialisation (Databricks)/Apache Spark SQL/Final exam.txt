@@ -1,0 +1,502 @@
+## Final Exam
+
+1. Modify a table
+   Modify the columns in table `sales` to match the provided schema:
+   | column       | type   |
+   | ------------ | ------ |
+   | datetime     | BIGINT |
+   | disc_code    | INT    |
+   | product_code | STRING |
+   | unit_cost    | STRING |
+   | unit_price   | STRING |
+   
+   Select the SQL query that achieves the following:
+   - select columns `datetime`, `unit_price` and `disc_code`
+   - converts `datetime` to `TIMESTAMP` and renames as `datetime`
+   - converts `unit_price` to `FLOAT`
+   - write the result to a table named `discounts`
+   
+   DROP TABLE IF EXISTS discounts;
+   CREATE TABLE discounts AS
+   SELECT
+	to_timestamp(datetime) AS datetime,
+	disc_code,
+	CAST(unit_price AS FLOAT)
+   FROM sales;
+   
+   SELECT * FROM discounts;
+
+2. Basic Math
+   Create a new column for the table `customers` by applying basic math operations to an existing column.
+   Given the schema:
+   | column          | type   |
+   | --------------- | ------ |
+   | cust_first_name | STRING |
+   | cust_last_name  | STRING |
+   | cust_city       | STRING |
+   | cust_state      | STRING |
+   | cust_country_id | STRING |
+   | cust_income     | BIGINT |
+   | cust_credit_lim | BIGINT |
+   | cust_valid      | STRING |
+   
+   Select the SQL query that achieves the following:
+   - includes columns `cust_first_name`, `cust_last_name`, `cust_income`, `cust_valid` and `suggested_amount`
+   - converts the `cust_valid` column to BOOLEAN
+   - creates a new column `suggested_amount`, which shows 5% of the `cust_income` column, rounded to the nearest dollar
+   - stores the result in a temporary view named `annual_gifts`
+   
+   CREATE OR REPLACE TEMPORARY VIEW annual_gifts AS
+   SELECT
+	cust_first_name,
+	cust_last_name,
+	cust_income,
+	CAST(cust_valid) AS BOOLEAN,
+	cust_income * .05 AS suggested_amount
+   FROM customers;
+   
+   SELECT * FROM annual_gifts;
+   
+3. Define a table with a schema
+   Write a table `restaurant_reviews` and define its schema in the creation statement.
+   
+   Select the table creation statement that achieves the following:
+   - uses the path `/mnt/training/restaurants/reviews.csv'
+   - allows the first line to be read as a header
+   - specifies that the table is created using `csv`
+   - creates a table with the following schema:
+     | column        | type      |
+     | ------------- | --------- |
+     | restaurant_id | STRING    |
+     | user_id       | STRING    |
+     | rating        | INT       |
+     | text_review   | STRING    |
+     | time_recorded | TIMESTAMP |
+   
+   DROP TABLE IF EXISTS restaurant_reviews;
+   CREATE TABLE restaurant_reviews (
+	restaurant_id STRING,
+	user_id STRING,
+	rating INT,
+	text_review STRING,
+	time_recorded TIMESTAMP
+   ) USING csv options (
+    path "mnt/training/restaurants/reviews.csv",
+	header "true"
+   );
+   
+4. Remove duplicates and sort
+   De-duplicate and sort restaurant review information from the table `restaurant_evals`.
+   Given the schema:
+   | column        | type   |
+   | ------------- | ------ |
+   | restaurant_id | STRING |
+   | user_id       | INT    |
+   | rating        | DOUBLE |
+   | text_review   | STRING |
+   | time_recorded | BIGINT |
+   
+   Select the query that achives the following:
+   - removes duplicate rows
+   - casts `time_recorded` as a timestamp. This value can be converted from unixtime
+   - sorts rows by `rating` in descending order, and then by `time_recorded` in ascending order
+   - displays only columns `restaurant_id`, `user_id`, `rating`, `text_review` and `time`
+   
+   SELECT DISTINT *
+   FROM (
+	SELECT
+	 restaurant_id,
+	 user_id,
+	 rating,
+	 text_review,
+	 from_unixtime(time_recorded) AS time
+	FROM restaurant_evals
+	)
+   ORDER BY rating DESC, time ASC;
+
+5. Limit results
+   Return the top 5 results for data that matches the following criteria.
+   Given the schema:
+   | column        | type      |
+   | ------------- | --------- |
+   | product_id    | STRING    |
+   | time_recorded | TIMESTAMP |
+   | net_revenue   | DOUBLE    |
+   
+   Write a SQL query that on the table `q1_sales` that achieves the following:
+   - includes the columns `product_id`, `closing_date` and `net_revenue`
+   - casts `time_recorded` as `DATE` and renames as `closing_date`
+   - sorts rows by `net_revenue` in descending order and then `closing_date` in ascending order
+   - limits the results to the top 5
+   
+   SELECT
+    product_id,
+	to_date(time_recorded) AS closing_date,
+	net_revenue
+   FROM q1_sales
+   ORDER BY net_revenue DESC, closing_date ASC;
+
+6. Join tables
+   Perform a join on the tables `games` and `goals`.
+   Given the schemas:
+   
+   **orders**
+   | column     | type   |
+   | ---------- | ------ |
+   | order_id   | INT    |
+   | order_date | DATE   |
+   | cust_id    | STRING |
+   
+   **customers**
+   | column       | type   |
+   | -------------| ------ |
+   | cust_id      | STRING |
+   | cust_name    | STRING |
+   | contact_name | STRING |
+   | country      | STRING |
+   
+   Select the query that achieves the following:
+   - performs an inner join on `orders` and `customers` on the column `cust_id`
+   - includes the following columns: `cust_id`, `order_date`, `cust_name`
+   
+   SELECT
+	orders.cust_id,
+	order_date,
+	cust_name
+   FROM orders
+   JOIN customers on orders.cust_id = customers.cust_id;
+
+7. Union tables
+   Peform a union of the tables `q1_earnings` and `q2_earnings`.
+   Assume that the tables have the same schema.
+   Select the query that achieves the following:
+   - includes records from both tables with duplicates removed
+   
+   SELECT *
+   FROM q1_earnings
+   UNION
+   SELECT *
+   FROM q2_earnings;
+
+8. Extract year and month
+   Extract the year and month from the `timestamp` field in the table `timetable1`.
+   Given the schema:
+   | column | type      |
+   | ------ | --------- |
+   | time   | TIMESTAMP |
+   | rating | DOUBLE    |
+   
+   Select the SQL query that achieves the following:
+   - extracts the year and month from the timestamp
+   - includes the columns `year`, `month` and `rating` in the results
+   
+   SELECT
+    month(time) AS month,
+	day(time) AS day,
+	rating
+   FROM timetable1;
+
+9. Extract day of week
+   Create a new `day` column from the table `sales`.
+   Given the schema:
+   | column       | type      |
+   | ------------ | --------- |
+   | time         | TIMESTAMP |
+   | purchase_amt | DOUBLE    |
+   | sale_id      | INT       |
+   
+   Select the query that achieves the following:
+   - creates a new column `day` that contains the day of the week associated with the timestamp. This column should
+     contain the name of the day e.g. Sunday, Monday, Tuesday
+   - Returns three columns: `day`, `purchase_amt` and `sale_id`
+   
+   SELECT
+      date_format(time, "E") AS day,
+	  purchase_amt,
+	  sale_id
+   FROM sales;
+   
+   
+   SELECT
+    date_format(to_date(time), "E") AS day,
+	purchase_amt,
+	sale_id
+   FROM sales;
+
+10. Minimum function
+    Display the minimum total revenue for each `category` in the table `feb_sales`.
+	Given the schema:
+	| column     | type   |
+	| ---------- | ------ |
+	| item_id    | INT    |
+	| category   | STRING |
+	| sale_price | DOUBLE |
+	| quantity   | INT    |
+   
+   Select the query that achieves the following:
+   - creates a new column `total_revenue` by multiplying `sale_price` by `quantity`, rounded to the nearest cent
+   - displays the minimum `total_revenue` in each `category`. Label that column `min_revenue`
+   - displays the sum of all `total_revenue` in each `category`. Label that column `category_sum`
+   - includes columns `category`, `category_sum` and `min_revenue`
+   
+   SELECT
+    category,
+	ROUND(SUM(total_revenue), 2) AS category_sum,
+	MIN(total_revenue) AS min_revenue
+   FROM (
+	 SELECT
+	  *,
+	  ROUND(sale_price * quantity), 2) AS total_revenue
+	 FROM feb_sales
+	)
+   GROUP BY category;
+   
+   
+   WITH total_rev AS (
+    SELECT
+	 *,
+	 ROUND(sale_price * quantity, 2) AS total_revenue
+	FROM feb_sales
+   )
+   SELECT
+    category,
+	ROUND(SUM(total_revenue), 2) AS category_sum,
+	MIN(total_revenue) AS min_revenue
+   FROM total_rev
+   GROUP BY category;
+
+11. Maximum function
+	Display the maximum total revenue for each `category` and `item_id` in the table `feb_sales`.
+	Given the schema:
+	| column     | type   |
+	| ---------- | ------ |
+	| item_id    | INT    |
+	| category   | STRING |
+	| sale_price | DOUBLE |
+	| quantity   | INT    |
+   
+   Select the query that achieves the following:
+   - creates a new column `total_revenue` by multiplying `sale_price` by `quantity`, rounded to the nearest cent
+   - displays the maximum `total_revenue` for each `category` and `item_id`. Label that column `max_revenue`
+   
+   SELECT
+    category,
+	item_id,
+	ROUND(SUM(total_revenue), 2) AS category_sum,
+	MAX(total_revenue) AS max_revenue
+   FROM (
+	 SELECT
+	  *,
+	  ROUND(sale_price * quantity), 2) AS total_revenue
+	 FROM feb_sales
+	)
+   GROUP BY category, item_id;
+
+12. Average function
+	Display the average total revenue for each `category` in the table `feb_sales`.
+	Given the schema:
+	| column     | type   |
+	| ---------- | ------ |
+	| item_id    | INT    |
+	| category   | STRING |
+	| sale_price | DOUBLE |
+	| quantity   | INT    |
+   
+   Select the query that achieves the following:
+   - creates a new column `total_revenue` by multiplying `sale_price` by `quantity`, rounded to the nearest cent
+   - displays the average `total_revenue` in each `category`. Label that column `avg_revenue`
+   - displays the standard deviation for `avg_revenue`. Label that column `std_deviation`
+   
+   SELECT
+    category,
+	ROUND(AVG(total_revenue), 2) AS avg_revenue,
+	ROUND(STD(total_revenue), 3) AS std_deviation
+   FROM (
+	 SELECT
+	  *,
+	  ROUND(sale_price * quantity), 2) AS total_revenue
+	 FROM feb_sales
+	)
+   GROUP BY category;
+   
+13. Pivot table
+	Display `categories` as columns. Show `total_rev` in each category.
+	Given the schema:
+	| column     | type   |
+	| ---------- | ------ |
+	| item_id    | INT    |
+	| category   | STRING |
+	| sale_price | DOUBLE |
+	| quantity   | INT    |
+   
+   Select the query that achieves the following:
+   - creates a new column `total_revenue` by multiplying `sale_price` by `quantity`, rounded to the nearest cent
+   - displays the sum of `total_revenue` in each `category`, where each `category` is a column
+   
+   SELECT
+	*
+   FROM (
+    SELECT
+	 category,
+	 ROUND(sale_price * quantity, 2) AS total_revenue
+	FROM feb_sales
+   ) PIVOT (
+     ROUND(SUM(total_revenue, 2) FOR catgeory IN ('books', 'magazines', 'movies')
+   );
+   
+14. Null values and aggregates
+	Compute the sum of `sales_rev` grouped by `dept` after dropping null values from `inventory`.
+	Given the schema:
+	| column    | type   |
+	| --------- | ------ |
+	| item_id   | STRING |
+	| dept      | STRING |
+	| sales_rev | DOUBLE |
+	| price     | DOUBLE |
+   
+   Select the query that achieves the following:
+   - drops any rows that contain null values in either the `item_id` or `dept` columns
+   - aggregate sums of `sales_rev` grouped by `dept`
+
+   SELECT
+    dept,
+	SUM(sales_rev)
+   FROM inventory
+   WHERE (
+    item_id IS NOT NULL AND dept IS NOT NULL
+	)
+   GROUP BY dept;
+
+15. Generate subtotals by rollup
+	Compute the average of `revenue` grouped by `title` and `month` such that the results include averages across all
+	months as well as a subtotal for an individual month from `book_sales`.
+	Given the schema:
+	| column  | type   |
+	| ------- | ------ |
+	| title   | STRING |
+	| month   | INT    |
+	| revenue | DOUBLE |
+	
+	Select the query that achieves the following:
+	- coalesces null values generated by the `ROLLUP` clause in the `month` column
+	- generates a new column `avg_revenue`, rounded to the nearest dollar
+	- groups records by `title` and then `month`
+	
+	SELECT
+	 COALESCE(title, "All titles") AS title,
+	 COALESCE(month, "All months") AS month,
+	 ROUND(AVG(revenue, 2) AS avg_revenue
+	FROM book_sales
+	GROUP BY ROLLUP (title, month)
+	ORDER BY title, month;
+
+16. MapTypes
+	Flatten the `customers` table so that there is no `MAP` and the query results include 4 columns: `first_name`,
+	`last_name`, `titles` and `payment_methods`.
+	Given the schema:
+	| column        | type                                                                    |
+	| ------------- | ----------------------------------------------------------------------- |
+	| first_name    | STRING                                                                  |
+	| last_name     | STRING                                                                  |
+	| subscriptions | MAP<STRING, MAP <titles: ARRAY<STRING>, payment_methods:ARRAY<STRING>>> |
+	
+	Select the SQL query that achieves the following:
+	- returns results with the following schema:
+	  | column          | type   |
+	  | --------------- | ------ |
+	  | first_name      | STRING |
+	  | last_name       | STRING |
+	  | titles          | ARRAY  |
+	  | payment_methods | ARRAY  |
+	
+	**Note**: Remember, when you `EXPLODE` a `MapType` column, it breaks the field into `key`, `value` pairs.
+
+	WITH explode_subs AS (
+	 SELECT
+	  first_name,
+	  last_name,
+	  EXPLODE(subscriptions)
+	 FROM customers
+	)
+	SELECT
+	 first_name,
+	 last_name,
+	 value.titles,
+	 value.payment_methods
+	FROM explode_subs;
+
+17. Arrays and indexes
+	Access the first element of the `titles` array from the table `customers`.
+	Given the schema:
+	| column        | type                                                                    |
+	| ------------- | ----------------------------------------------------------------------- |
+	| first_name    | STRING                                                                  |
+	| last_name     | STRING                                                                  |
+	| subscriptions | MAP<STRING, MAP <titles: ARRAY<STRING>, payment_methods:ARRAY<STRING>>> |
+	
+	Select the SQL query that achieves the following:
+	- returns the columns `first_name`, `last_name` and `title`
+	- lists the first element of the `titles` array as the string in the `title` column
+	
+	SELECT
+	 first_name,
+	 last_name,
+	 value.titles[0] AS title
+	FROM (
+	 SELECT
+	  first_name,
+	  last_name,
+	  EXPLODE(subscriptions)
+	 FROM customers
+	);
+
+18. Transform
+	Transform the mixed-case `titles` in the `books` table to upper case.
+	Given the schema:
+	| column | type  |
+	| ------ | ----- |
+	| titles | ARRAY |
+	
+	Each array contains mixed-case book titles like *the red barn*, *Living* and *HAPPINESS*.
+	Select the query that achieves the following:
+	- returns the `titles` column with all values written in uppercase
+	
+	SELECT TRANSFORM(titles, t -> UPPER(t)) AS titles
+	FROM books;
+
+19. Flag records
+	Create a new column to flag low battery levels with no available backups from the table `devices`.
+	Given the schema:
+	| column         | type        |
+	| -------------- | ----------- |
+	| battery_levels | ARRAY (INT) |
+	| backups        | INT         |
+	| location_id    | INT         |
+	
+	Select the query that achieves the following:
+	- creates a new column named `needs_service` that holds Boolean values
+	- uses a higher-order function to flag locations reporting battery levels under 4 **and** no available backups
+	- returns columns `location_id` and `needs_service`
+	
+	SELECT
+	 location_id,
+	 EXISTS(battery_levels, b -> b < 4 AND backups = 0) AS needs_service
+	FROM devices;
+	
+20. Reduce
+	Find the sum of the `battery_levels` in each array in the table `devices`.
+	Given the schema:
+	| column         | type        |
+	| -------------- | ----------- |
+	| battery_levels | ARRAY (INT) |
+	| backups        | INT         |
+	| location_id    | INT         |
+	
+	Select the query that achieves the following:
+	- creates a new column `total_batt_levels` that holds the sum of all battery levels at a location
+	- returns the columns `location_id` and `total_batt_levels`
+	
+	SELECT
+	 location_id,
+	 REDUCE(battery_levels, 0, (level, acc) -> level + acc) AS total_batt_levels
+	FROM devices;
