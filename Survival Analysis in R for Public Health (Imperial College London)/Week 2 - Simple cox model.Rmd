@@ -1,0 +1,62 @@
+---
+title: "Week 2 - Simple cox model"
+output: html_document
+date: "2023-10-01"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(survival)
+library(survminer)
+
+data <- read_csv("simulated HF mort data for GMPH.csv")
+
+data <- data %>% 
+  mutate(across(c(death, cancer:pneumonia, pci, stroke, senile),
+                ~factor(.x, labels = c("no", "yes"))),
+         gender = factor(gender, labels = c("male", "female")),
+         quintile = factor(quintile, labels = c("other", "most affluent",
+                                                "affluent",
+                                                "neither affluent nor poor",
+                                                "poor", "poorest")),
+         ethnic_group = factor(ethnicgroup, labels = c("white", "black",
+                                                       "indian subcontinent",
+                                                       "other"))) %>%
+  select(-ethnicgroup)
+summary(data)
+```
+
+```{r}
+cox <- coxph(Surv(fu_time, as.numeric(death)) ~ ethnic_group, data = data)
+summary(cox)
+```
+
+Notice that 43 observations were excluded because of missing data. Why they are missing will be discussed shortly.
+
+The standard errors are between about 0.3 and 0.4, so not too big to worry about but not exactly small either. This is reflected in the width of the confidence intervals. For the second group, black people, the hazard ratio (“exp(coef)”) is 0.94 to two decimal places, with a 95% CI of 0.50 to 1.75. That’s pretty wide.
+
+But what does it mean? Hazard ratio of what divided by what? You need to know the reference category, the one that’s missing from the above output, which is the first group, white people. The hazard for all-cause mortality for black people is 0.94 times the hazard for white people, but `p = 0.841` and the CI is so wide that you can’t reliably conclude anything except that you don’t have any evidence to reject the null hypothesis. You'd therefore conclude that black and white people appear to have the same hazard. 
+
+For the third group, those from the Indian subcontinent, however, their hazard ratio is 0.30, 95% CI 0.14 to 0.68, p=0.004. That’s a statistically significant difference in favour of these patients compared with white patients. There’s quite a bit of uncertainty about just how much lower their hazard is, but you’ve good evidence to suggest that it’s lower. For the final group (other) you can’t reject the null, just like for black people.
+
+Let’s return to those with missing ethnic group. What else could you do with them? An easy option is simply to make an “unknown” category for them.
+
+```{r}
+data <- data %>%
+  mutate(ethnic_group = factor(if_else(is.na(ethnic_group), 8, as.numeric(ethnic_group)),
+                               labels = c("white", "black", "indian subcontinent",
+                                          "other", "unknown")))
+
+cox <- coxph(Surv(fu_time, as.numeric(death)) ~ ethnic_group %>% %>% , data = data)
+summary(cox)
+```
+
+A few things have changed, but others haven’t. First, no missing values were excluded. Second, there are lines of output for the added group. People with unknown ethnicity have a very similar hazard (0.98, CI 0.63 to 1.51, p=0.916) to white people. All the results for the other three categories are very close to what they were before, though not exactly the same if you look at the third or even fourth decimal place. 
+
+With just one categorical predictor in the model, it doesn’t matter whether you leave out or re-code and include missing values of that predictor. When we come to include multiple predictors later in the course, however, it’s very possible that your choice could affect the results. It’s a good idea to try it both ways and check. %>% %>% 

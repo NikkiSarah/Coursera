@@ -1,0 +1,76 @@
+---
+title: "Week 1 - Running a KM plot and log-rank test"
+output: html_document
+date: "2023-10-01"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(survival)
+
+data <- read_csv("simulated HF mort data for GMPH.csv")
+
+data <- data %>% 
+  mutate(across(c(death, cancer:pneumonia, pci, stroke, senile),
+                ~factor(.x, labels = c("no", "yes"))),
+         gender = factor(gender, labels = c("male", "female")),
+         quintile = factor(quintile, labels = c("other", "most affluent",
+                                                "affluent",
+                                                "neither affluent nor poor",
+                                                "poor", "poorest")),
+         ethnic_group = factor(ethnicgroup, labels = c("white", "black",
+                                                       "indian subcontinent",
+                                                       "other"))) %>%
+  select(-ethnicgroup)
+summary(data)
+```
+
+```{r}
+# run an overall Kaplan-Meier plot
+km_fit <- survfit(Surv(fu_time, as.numeric(death)) ~ 1, data = data)
+plot(km_fit)
+```
+
+`survfit` fits a simple survival model. In this case there aren't any predictors so the model just has an intercept, denoted by "1". The two arguments used by `Surv` are the follow-up time for each patient and whether they died. In our dataset, a value of 1 meant the patient had died by the end of the follow-up period, and 0 meant they were still alive. Technically, the latter are censored as everyone dies at some point. The `survfit()` function produces the Kaplan-Meier estimates of the probability of survival over that time that are used by `plot` to produce the Kaplan-Meier curve above. These estimates can be view using:
+
+```{r}
+summary(km_fit, times = c(1:7, 30, 60, 90*(1:10)))
+```
+
+The `times` argument gives us control over what time periods we want to see. The above code asks for output every day for the first week, then at 30, 60 and 90 days, and then every 90 days thereafter.
+
+Whereas all but about 1% make it past the first day, at 900 days after a first emergency admission for heart failure, the probability of surviving is just 38%.
+
+Now let’s extend this by splitting the curve by gender: 
+
+```{r}
+km_gender_fit <- survfit(Surv(fu_time, as.numeric(death)) ~ gender, data = data)
+plot(km_gender_fit)
+```
+
+To compare survival by gender, we can run a logrank test. There are many ways to do this because of different versions for different scenarios, e.g. particular types of censored data, but we’ll just use the standard one:
+
+```{r}
+survdiff(Surv(fu_time, as.numeric(death)) ~ gender, data = data)
+```
+
+`rho = 0` (the default) yields the log-rank or Mantel-Haenszel test. It’s the most popular method of comparing the survival of patient groups that takes the whole follow-up period into account. Its big advantage is that it you don’t need to know anything about the shape of the survival curve or the distribution of survival times. It’s based on a comparison of the observed numbers of deaths and the numbers of deaths expected if in fact there were no difference in the probability of death between the groups (genders in this case) and uses a chi-squared test. 
+
+The p-value in this case is 0.8. There’s therefore no good evidence of a difference between the genders in their survival times. 
+
+```{r}
+data <- data %>%
+  mutate(age_65plus = factor(if_else(age >= 65, 1, 0), labels = c("no", "yes")))
+
+survdiff(Surv(fu_time, as.numeric(death)) ~ age_65plus, data = data)
+```
+
+This time, I got a low p value, one that’s way below the conventional 5% threshold, so you'd conclude that survival times do differ by whether you’ve turned 65. But which group live longest after their hospital admission?
+
+You’d expect the younger group to live longest of course, but you don’t know that until you look at the above table. The 115 younger patients (those with `age_65plus = 0`) had 18 observed deaths, but you would expect 67 under the null hypothesis of no difference in survival times by age group. In contrast, the older group had more deaths than expected under the null, which confirms your instinct that younger patients live significantly (`p < 0.001`, in fact very near zero) longer after hospital admission than older ones do.

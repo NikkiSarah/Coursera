@@ -1,0 +1,152 @@
+---
+title: "Week 3 - Multiple cox model"
+output: html_document
+date: "2023-10-01"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(survival)
+library(survminer)
+
+data <- read_csv("simulated HF mort data for GMPH.csv")
+
+data <- data %>% 
+  mutate(across(c(death, cancer:pneumonia, pci, stroke, senile),
+                ~factor(.x, labels = c("no", "yes"))),
+         gender = factor(gender, labels = c("male", "female")),
+         quintile = factor(quintile, labels = c("other", "most affluent",
+                                                "affluent",
+                                                "neither affluent nor poor",
+                                                "poor", "poorest")),
+         ethnic_group = factor(ethnicgroup, labels = c("white", "black",
+                                                       "indian subcontinent",
+                                                       "other")),
+         ethnic_group = factor(if_else(is.na(ethnic_group), 8, as.numeric(ethnic_group)),
+                               labels = c("white", "black", "indian subcontinent",
+                                          "other", "unknown"))) %>%
+  select(-ethnicgroup)
+summary(data)
+```
+
+```{r}
+summary(data$age)
+
+table(data$gender, useNA = "ifany")
+
+table(data$copd, useNA = "ifany")
+
+table(data$prior_dnas, useNA = "ifany")
+
+table(data$ethnic_group, useNA = "ifany")
+```
+
+There is a fairly widespread range of values for `age` and no missing values.
+
+`gender` is fairly evenly split between males and females, and there are also no missing values.
+
+Only 24.2% of patients had a `copd` recorded, and there are no official missing values. However, it’s actually likely that some patients have COPD but haven’t been recorded as having it. Such under-recording of co-morbidities is common with administrative data for various reasons.
+
+73.2% of patients had no prior missed outpatient appointments, and another 25.7% had between 1 and 4 missed appointments. In a regression model, you have three options for a variable like this. The first and preferred option would be to assume that it has a more-or-less linear relationship with the outcome. The second option would be to treat it as a discrete categorical variable, although categories with very few observations can be problematic. The third option would be to combine the smaller categories together.
+
+In the previous notebook, the patients with missing ethnicity formed their own discrete group.
+
+```{r}
+cox <- coxph(Surv(fu_time, as.numeric(death)) ~ age + gender + copd + prior_dnas + 
+               ethnic_group, data = data)
+summary(cox)
+```
+
+According to the results:
+- females are at lower risk of mortality than males following hospital admission for heart failure
+- prior non-attendance is a statistically significant predictor of mortality
+- patients with an "other" ethnicity have an increased risk of mortality compared with "white" patients, but the result isn't statistically significant.
+
+```{r}
+table(data$quintile, data$death, useNA = "ifany")
+
+cox <- coxph(Surv(fu_time, as.numeric(death)) ~ age + gender + copd + quintile + 
+               ethnic_group, data = data)
+summary(cox)
+```
+
+This is a disaster. The coefficients and particularly the standard errors for `quintile` are all huge. A couple of the standard errors for `ethnic_group` are a bit high, but the main problem is `quintile`. It seems to have infinitely wide CIs.
+
+Only four patients have quintile zero. This means invalid quintile, for instance when the postcode (zip code) can’t be mapped to a small geographical area and therefore to a socioeconomic status measure. Actually, four patients in a category can sometimes be enough to get the model to work, but there’s another problem.
+
+Of those four patients with quintile zero, no one died. That itself might not be a problem, but we’ve let R choose the reference category by default, and it’s chosen quintile zero. All the other five hazard ratios are relative to this tiny group of patients in which no one died. It’s not surprising that the algorithm couldn’t come up with sensible HR estimates. 
+
+How can you fix this?
+
+**Option 1: Change the reference category**
+By default, R sets the first (lowest) category to be the reference. With quintile taking on values from 0 to 5 and 0 having very few patients in it, 0 is an awful choice of reference category. The first thing to try is to set the reference one to something else. As quintile measures socio-economic status or deprivation, and you're usually interested in the effect of lower status (or greater deprivation in UK terminology) compared with higher status, it makes sense to set higher status – quintile = 1 – as the reference category.
+
+**Option 2: Combine categories**
+If that doesn’t work, then consider combining categories if it makes sense to do so. Quintile zero is the an artificial category meaning that the patient’s postcode (zip code) or other small geographical area identifier was missing or could not be linked to the national socio-economic status file, i.e. the patient’s status is unknown. These patients are often different from the others, e.g. they are from overseas or are homeless, and that’s why they have no postcode or geographical area. It doesn’t make too much sense to combine them with any of the other five categories. However, in this case, this quintile zero group is so small compared with the other categories that combining them will have a negligible impact on the results.
+
+**Option 3: Exclude the patients**
+This is the best option if combining categories doesn’t make sense and there are only a few patients in the problematic category.
+
+**Option 4: Drop the offending variable**
+This will be the best option if combining categories doesn’t make sense and if there are too many few patients in the problematic category for us to be comfortable dropping them all.
+
+In practice, you may have to trade off one of these concerns against another, for example having to choose between combining categories that don’t fit well together and dropping an important variable from the model.
+
+Remember that the problem of non-convergence can happen in any kind of regression and that these simple tricks can also work there.
+
+```{r}
+# Option 1
+data <- data %>%
+  mutate(quintile2 = relevel(quintile, ref = "most affluent"))
+
+cox <- coxph(Surv(fu_time, as.numeric(death)) ~ age + gender + copd + quintile2 + 
+               ethnic_group, data = data)
+summary(cox)
+```
+
+It still didn’t converge. The problem is with quintile "other": look at its huge standard error (1.208e+03) and infinite confidence interval. You need to try something else.  
+
+```{r}
+# Option 2
+data <- data %>%
+  mutate(quintile3 = factor(if_else(quintile == "other", 5, as.numeric(quintile)),
+                            labels = c("most affluent", "affluent",
+                                       "neither affluent nor poor", "poor",
+                                       "poorest / other")))
+
+cox <- coxph(Surv(fu_time, as.numeric(death)) ~ age + gender + copd + quintile3 + 
+               ethnic_group, data = data)
+summary(cox)
+```
+
+This time it’s behaved well and has converged. However, was combining the "other" quintile people with the most disadvantaged a good idea? The two sets of patients are probably quite different.
+
+```{r}
+# Option 3
+data2 <- data %>%
+  filter(quintile != "other") %>%
+  mutate(quintile = factor(quintile, labels = c("most affluent", "affluent",
+                                                "neither affluent nor poor",
+                                                "poor", "poorest")))
+
+cox <- coxph(Surv(fu_time, as.numeric(death)) ~ age + gender + copd + quintile + 
+               ethnic_group, data = data2)
+summary(cox)
+```
+
+There are ten missing observations this time. The hazard ratio for the "poorest" quintile has gone from 1.08 to 1.11. Not a big change, but it’s quite surprising that the HR has changed at all given that it’s only a question of four patients.
+
+```{r}
+# Option 4
+cox <- coxph(Surv(fu_time, as.numeric(death)) ~ age + gender + copd + ethnic_group,
+             data = data)
+summary(cox)
+```
+
+This is the simplest and sometimes best option. In this case, though, I think this is rather like taking a massive hammer to crack a nut. I’d just drop the four quintile zero patients entirely as they comprise such a small percentage of the sample.
