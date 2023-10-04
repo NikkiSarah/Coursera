@@ -1,0 +1,196 @@
+---
+title: "Week 4 - Multiple cox model"
+output: html_document
+date: "2023-10-02"
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(survival)
+library(survminer)
+
+data <- read_csv("simulated HF mort data for GMPH.csv")
+
+data <- data %>% 
+  mutate(across(c(death, cancer:pneumonia, pci, stroke, senile),
+                ~factor(.x, labels = c("no", "yes"))),
+         gender = factor(gender, labels = c("male", "female")),
+         quintile = factor(quintile, labels = c("other", "most affluent",
+                                                "affluent",
+                                                "neither affluent nor poor",
+                                                "poor", "poorest")),
+         ethnic_group = factor(ethnicgroup, labels = c("white", "black",
+                                                       "indian subcontinent",
+                                                       "other")),
+         ethnic_group = factor(if_else(is.na(ethnic_group), 8, as.numeric(ethnic_group)),
+                               labels = c("white", "black", "indian subcontinent",
+                                          "other", "unknown"))) %>%
+  select(-ethnicgroup)
+summary(data)
+```
+
+The proportionality assumption can be checked informally by plotting the hazards as in the video. If the assumption is met then the hazard lines will be roughly parallel to each other - note that that's only true when they're plotted on the log scale, i.e. if you take the natural logarithm of the hazards or plot them on axes on the log scale.
+
+```{r}
+# check the proportionality assumption for gender
+fit <- coxph(Surv(fu_time, as.numeric(death)) ~ gender, data = data)
+temp <- cox.zph(fit)
+
+print(temp)
+plot(temp)
+```
+
+Technically speaking, the function cox.zph() correlates for each predictor the corresponding set of scaled Schoenfeld residuals with time, to test for independence between residuals and time. You don’t actually need to know what any of that means to do the test, but some people prefer to know the technical details of things. If you took the courses on linear and logistic regression in this series, you will have come across the term “residuals”. In those types of regression, they measured the difference between the model’s predicted values and the actual values from the data. Cox regression also generates residuals, and Schoenfeld are one type mentioned in the video.
+
+The relatively high p value from the test confirms what our eyes suggest from looking at the plot. The line is pretty flat, meaning that the effect of gender changes little during the follow-up period. That’s good news.
+
+A prettier version of the above plot can be obtained from the function ggcoxzph() [in the survminer package]. This produces graphs of the scaled Schoenfeld residuals against the transformed time for each covariate.
+
+When you have a predictor with few categories, you can also use our old friend the Kaplan-Meier plot as an informal visual check. If the predictor satisfies the proportional hazard assumption, then the graph of the survival function versus the survival time should yield parallel curves. This method does not work well for continuous predictors or categorical ones with many levels because the graph becomes too “cluttered”.
+
+The lines give the survival probability for each gender at each time point. This plot is very no-frills, but in this instance it does the job – it’s pretty clear that the two lines are pretty parallel over time throughout the follow-up period, though in this instance the fact that they’re almost on top of one another makes it easy to judge.  
+
+```{r}
+km_fit <- survfit(Surv(fu_time, as.numeric(death)) ~ gender, data = data) 
+plot(km_fit, xlab = "time", ylab = "Survival probability")
+```
+
+**Using the other types of residuals in Cox regression**
+
+Deviance residuals are transformations of martingale residuals and help you look for outliers or influential data points. You can either examine the influence of each data point on the coefficients or plot the distribution of the residuals against the covariate. 
+
+```{r}
+res.cox <- coxph(Surv(fu_time, as.numeric(death)) ~ age, data = data) 
+ggcoxdiagnostics(res.cox, type = "dfbeta", 
+                 linear.predictions = FALSE, ggtheme = theme_bw())
+```
+
+It’s also possible to check outliers by visualizing the deviance residuals, which are normalized transformations of the martingale residual and should be roughly symmetrically distributed about zero with a standard deviation of 1. If you remember the normal distribution, then 5% of observations are more than 1.96 standard deviations from the mean. So if the SD is 1, then only 5% of observations should be bigger than 1.96 or more negative than -1.96. If you have more than that proportion, then your model doesn’t fit the data as well as it should and some observations are a problem. This is just the same issue as with the other types of regression. The maths behind the calculation of the residuals is different, mostly because of the censoring, but we don’t need to worry about that.
+
+- Positive values correspond to individuals that “died too soon” compared with expected survival times.
+- Negative values correspond to individual that “lived too long” compared with expected survival times.
+- Very large or small values are outliers, which are poorly predicted by the model. 
+
+```{r}
+ggcoxdiagnostics(res.cox, type = "deviance", 
+                 linear.predictions = FALSE, ggtheme = theme_bw())
+```
+
+Another issue is whether any continuous variables that you assume to have a linear relation with the outcome actually do have a linear relation. If you fit age as a single term in the model, then that’s what you’re assuming. The martingale residual is used to test this assumption.
+
+Martingale residuals may present any value between minus infinity and 1) and have a mean of zero:
+
+- Martingale residuals near 1 represent individuals that “died too soon”
+- Large negative values correspond to individuals that “lived too long”
+
+The plots should give you nice straight line if the assumption is valid. 
+
+```{r}
+ggcoxfunctional(Surv(fu_time, as.numeric(death)) ~ age + log(age) + sqrt(age),
+                data = data) 
+```
+
+```{r}
+# check the proportionality assumption for copd
+fit <- coxph(Surv(fu_time, as.numeric(death)) ~ copd, data = data)
+temp <- cox.zph(fit)
+
+print(temp)
+plot(temp)
+
+km_fit <- survfit(Surv(fu_time, as.numeric(death)) ~ copd, data = data) 
+plot(km_fit, xlab = "time", ylab = "Survival probability")
+```
+
+Suppose your test for proportional hazards gives you a clear suggestion that the assumption isn't met. What should you do?
+
+To answer this, you need to think about what having non-proportional hazards means. If the relation between males and females regarding their risk of death changes over time, it could mean, for instance, that males have a higher risk of death early on during the follow-up period but at some point the relation changes so that females have a higher risk of death. One way of putting this is that there is a statistical interaction between gender and time. The model is short of a coefficient. If you add a coefficient for this interaction, which allows for the difference in risk by gender to change over time, then the problem would be solved. 
+
+Trying this interaction term in the model and testing whether it is statistically significant is in fact another way of testing the proportionality assumption. If this interaction term is not statistically significant, then it follows that the assumption is valid. As is usual with any kind of regression, Cox included, you should do the statistical tests – i.e. get the p-values – but also do the plots. Some kinds of non-proportional relationships and other assumption violations can’t be detected just from a p value.
+
+Let’s go through how to include this interaction term and test whether it’s statistically significant. For mathematical reasons, you can’t just include the follow-up time itself as part of the interaction but instead need to transform it.
+
+```{r}
+# check if there is an interaction with time
+fit <- coxph(Surv(fu_time, as.numeric(death)) ~ gender + tt(gender), data = data)
+summary(fit)
+```
+
+This output agrees with the earlier approach and says that the interaction between gender and (transformed) time is not statistically significant, i.e. there’s no apparent violation of the proportionality assumption. Again, good news. The p-value from this approach (about 0.5) isn’t the same as that from the earlier one because the methods are different, though it’s always nice when they give the same message!
+
+So if the assumption is violated, then one option is to include this interaction. If the p-value is low but the hazards are proportional for most of the follow-up period, then that suggests another solution: divide the survival analysis into two time periods. You can fit one model when things are fine, i.e. when the assumption is valid, and another model to cover the later follow-up period when the assumption is not valid. This second model may need an interaction term, but the first one won't. 
+
+There’s also a third simple way of dealing with the problem: stratify the analysis by the variable that’s causing the problems. If it’s gender, for instance, then just fit separate models for males and females. The drawback of this approach is that it’s no longer possible to compare the effect of each gender on mortality.
+
+```{r}
+vars <- c("age", "gender", "ethnic_group", "ihd", "valvular_disease", "pvd",
+          "stroke", "copd", "pneumonia", "hypertension", "renal_disease",
+          "cancer", "metastatic_cancer", "mental_health", "senile", "los",
+          "prior_dnas", "cognitive_imp")
+
+data_sub <- data %>% 
+  mutate(cognitive_imp = factor(if_else(dementia == "yes" | senile == "yes", "yes", "no"))) %>% 
+  select(c(all_of(vars), "fu_time", "death"))
+summary(data_sub)
+
+predictors <- paste(vars, collapse = "+")
+predictors
+
+# fit model with all the predictors
+cox_full <- coxph(Surv(fu_time, as.numeric(death)) ~ age + gender + 
+                    ethnic_group + ihd + valvular_disease + pvd + stroke + 
+                    copd + pneumonia + hypertension + renal_disease + cancer + 
+                    metastatic_cancer + mental_health + los + prior_dnas + 
+                    cognitive_imp, data = data_sub)
+summary(cox_full)
+```
+
+The statistically significant coefficients belonged to:
+- age
+- gender
+- pneumonia
+- metastatic_cancer
+- los
+- prior_dnas
+- cognititive_imp
+
+There are a handful that are statistically significant at the 10% level, but we'll stick to the 5% threshold.
+
+```{r}
+# apply backwards elimination to reduce the number of predictors
+cox_sub <- coxph(Surv(fu_time, as.numeric(death)) ~ age + gender + pneumonia + 
+               metastatic_cancer + los + prior_dnas + cognitive_imp,
+             data = data_sub)
+summary(cox_sub)
+
+# compare the coefficients
+cox_full$coefficients
+cox_sub$coefficients
+```
+
+| Predictor            | Full Model HR | Reduced Model HR |
+| -------------------- | ------------- | ---------------- |
+| age                  | 1.0601        |  1.0615          |
+| gender               | 0.8057        |  0.7490          |
+| pneumonia            | 1.3529        |  1.4028          |
+| metastatic cancer    | 8.9778        | 12.0025          |
+| los                  | 1.0116        |  1.0117          |               
+| prior dnas           | 1.1135        |  1.1248          |
+| cognitive impairment | 1.3874        |  1.3145          |
+
+The values for all the coefficients are very similar, so we don't have to do any further adjustment (i.e adding back in highly correlated but statistically insignificant predictors).
+
+```{r}
+# test the proportional hazards assumption
+ph_test <- cox.zph(cox_sub)  
+print(ph_test)
+```
+
+None of the p-values are small so the assumption checks out.
+
