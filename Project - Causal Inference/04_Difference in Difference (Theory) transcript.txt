@@ -1,0 +1,181 @@
+The third technique we will cover is called Difference,
+Indifference and to motivate our discussion.
+Suppose we want to measure the effect of lowering price
+on revenue at a company.
+And so the first question is, can we run in a B tests to do
+this? And we could try to run a Navy test, But customers
+might complain if Onley if they notice on Lee.
+Some people are getting lower prices, and then they hear
+about it, and they're not one of those people.
+And so that could lead to, you know, bad customer
+relationships, or even kind of contaminate.
+The experiment of people are able to kind of engineer the
+price that they're able to actually get.
+And so what about a quasi experiment?
+What we can do is we can change price in some select
+geographic regions like countries, but not others, and then
+use the ones where we don't change the price as control
+markets to compute the counterfactual or what would have
+happened in the treatment markets, where we do change the
+price absent a price change, and then by comparing what
+happens in the treatment markets where we change prices to
+the control markets where we don't we can kind of back out
+what? The causal impact of changing price on revenue.
+It's And so what we're going to do here is we're going to run
+a difference.
+Indifference, design with control and treatment markets where
+the Y variable is going to be revenue and our X variable of
+interest here is going to be a the treatment group in the
+post period.
+And so, just like a regression discontinuity, you can kind of
+explain everything involved in a difference indifference,
+design using the graph here, and the central idea is that
+we're going to compare pre and post outcomes between the
+treatment and control groups and so kind of using our kind of
+discussion or sort of problem statement.
+We have a treatment market in red here where we change the
+price at some particular point.
+So there's a vertical line here for when we might change the
+price. And then there's a control market where we don't
+change the price.
+And in both countries, we observe over time our sort of
+revenue over time, right?
+You can think of like monthly revenue for exam ball and then
+are the point at which we change prices kind of breaks our
+data sample into two time periods.
+One is the pre intervention and one is the post intervention
+and what we can do is we look can look at the change in the
+control group over time.
+So the final post intervention, you know, revenue minus the
+initial pre intervention revenue and kind of compute that
+change.
+And then this is the change.
+Over time, we would expect to see without any change in price,
+and then we can look at the treatment market where we did
+change the price and we can kind of observe the change over
+time in the treatment group.
+And then the change over time in the treatment group is
+essentially the sum of two things.
+It's the some of the natural change over time that we would
+expect and also the impact of the treatment or changing the
+price itself.
+And so, by taking the change over time in the treatment group,
+minus the change over time in the control group, we can
+remove the natural change over time that we'd expect to see
+without any price increase and isolate the change in revenue
+that's purely due to changing price.
+And so that's essentially what we're doing here in the
+difference and difference method that you can kind of see
+graphically.
+And the way we do that is we're going to again fit a
+regression model.
+Um, kind of between our kind of on our data sample in our two
+groups.
+And this progression model is going to effectively divide our
+sample into two groups like we would get in an AP test.
+So we're going to take our y variable or revenue, and we're
+going to regress it on an intercept and then an indicator for
+whether we are in the post period, so sort of after the price,
+the point at which we change the price.
+Then we're going to at an indicator for whether the
+observation is the test market that saw the price change or
+not. And then we're gonna add a coefficient that is the
+interaction between the and being in the post period and
+being in the treatment, and then what you'll see if use.
+If you kind of run through some algebra, you'll see that this
+interaction term is essentially going to be the estimate of
+our causal impact because it is going to be kind of this,
+like marginal estimate or marginal impact of changing the
+price, which is the kind of difference in the treatment group
+over time after subtracting the change in the control group
+over time.
+And so this graph and kind of the way would fit that model is
+essentially all there is the difference.
+The difference is, except there's a couple assumptions that
+we need to make sure that we satisfy in order to have a valid
+difference.
+Indifference, design and the first assumption which is key is
+called the parallel trends Assumption.
+And so the idea behind parallel trends is that we want our
+control group in our treatment group to be highly correlated
+in the pre period prior to the time point at which we do the
+intervention.
+And so, in our example, we want to check that revenue in the
+control country with no price change is similar and highly
+correlated with revenue in the treatment country that has the
+price change.
+And this ensures that the control group conserves a
+counterfactual of what we would have seen in the treatment
+group if we didn't change prices, and so how do we check for
+their parallel trends.
+Well, it's pretty easy and that we can just kind of graft the
+control and the treatment groups in the in the pre period,
+and we can see if they're highly correlated.
+And if they're highly correlated, almost identical in terms
+of the point of which they move, then that's great.
+And we have parallel trends.
+Another way is that we could build their aggression model to
+check whether the trends in the pre period between the
+treatment and control are identical to one another and
+statistically indistinguishable in particular.
+We could do a hypothesis test for whether that whether these
+slopes are identical between the two groups, and so that's
+kind of the main assumption behind difference, indifference,
+design.
+But then there's a couple problems with regular difference,
+indifference and in particular in a difference indifference
+design.
+We typically need to pick a single control group that
+satisfies parallel trends, but picking a single control group
+can be arbitrary because there could be a large number of
+potential control group.
+And so there's an extension to difference indifference called
+synthetic control that creates a synthetic control group that
+is essentially a weighted average of many different control
+groups in the way synthetic control works is that you choose
+waits to minimize the tracking error with the treatment group
+in the pre period prior to when an intervention happens
+amongst all your control groups.
+And these weights essentially give you an auto parallel trans
+assumption because you're taking a weighted average of all
+your control groups to follow the treatment group as closely
+as possible in the pre intervention period.
+And then what you do is you find the causal estimate by
+taking the difference in the post intervention period between
+your treatment and your synthetic control.
+That is a weighted average of all the potential control
+groups.
+And so there's a couple our packages that make running the
+synthetic control pretty easy.
+So one is called synth, and then the other is called Causal
+Impact, which is a basin inversion of synthetic control and
+just kind of has a a couple of additional assumptions to set
+a prior and allow you to generate easy confidence, intervals
+and things like that.
+And so here's an example of what the Beijing approach looks
+like and what the output of the kind of causal impact package
+and our looks like and so synthetic synthetic control of
+debasing approached.
+The synthetic control is really useful when you have a
+discreet shock in a given market, and a couple examples of
+this that are common in, um, data science are when you have,
+like, PR announcements or kind of company announcements in a
+particular market or you sign new partnerships with the
+government, for example, or a particular business in a
+particular country.
+You should see a spike in the business within that country.
+But other countries shouldn't be affected because the shock
+was localized.
+And so you can give it a bunch of potential control markets
+for your other countries that you work in and kind of compare
+what happens in the control markets to the treatment market,
+where you have this degree shock, and then measure the
+difference between the two markets using the causal impact
+package.
+And then you'll get a nice, rigorous estimate of the causal
+impact there.
+And so that's kind of, ah, intuition and overview of
+difference and differences.
+So hopefully now you'll take a some time to go to the coding
+section on difference and differences toe actually practice
+applying this thio simulated data set.

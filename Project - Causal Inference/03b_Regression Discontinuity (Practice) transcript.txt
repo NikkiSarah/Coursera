@@ -1,0 +1,165 @@
+Now we're going to run through an example of regression, dust
+continuity and let's run this line here to get our data set.
+You can then use coal names of that and head of that
+to explore our data set.
+And in this example, we're interested in understanding
+the impact of additional customer support on customer spent.
+And so customers spend here is our why variable of interest.
+And let's assume for this example, that we have a lead
+scoring model that outputs a score between 0 100 based
+on the likelihood that we think a customer were over new
+and we can assume it's the output of some machine learning
+model. And then because this lead scoring model has
+historically worked pretty well, we use it to decide
+whether we want to give additional support to customers
+or not.
+And so, when the model specifies the lead score
+above or equal to 70 be treated as a high quality deal and a
+provide additional customer support to the deal specified
+by this ad dot support variable.
+So this ad dot support variable is going to be a binary
+that's going to be true Onley when lead score is greater
+than or equal to seven.
+But because this leaves scoring model is going to be
+in perfect, we can then assume that customers just
+below and just above the 70 cut off for additional customer
+support are pretty similar to one another,
+except for the provision of additional customer support.
+And this, therefore creates a dis continuity point that we
+can use to estimate the impact of additional customer support
+on customer spends by comparing observations just
+below and above the cut off point of 70.
+And no to that.
+The counterfactual column here is going to be the trend that
+we would see if they're additional support on customers.
+Spend post The dis continuity cut off had no actual effect.
+And so let's plot the data here to get a sense of what their
+aggression, dis continuity, actually looks like.
+And we can do that by running these lines here that
+will create a G plot for us, and so we can click Zoom to get
+a kind of closer look view at the data.
+But what we see is that on the X axis we have our lead score
+of these customer deal and honor y axis we have customers
+spends, and the dotted line here at 70 denotes the dis
+continuity point below, which we don't provide additional
+customer support and above which we do provide additional
+customer support.
+And then the light blue line shows the relationship
+between lead score and customer spends.
+Now we would expect, without additional customer support,
+sort of estimated on the data below 70.
+And then the dark dotted blue line post the discontinuity
+caught off of 70 shows the counterfactual of what we
+would expect if providing additional support had no impact
+on customer spend.
+And it's sort of estimated by projecting forward
+the relationship pre cut off of 70 and then the dark blue
+dotted line post the cut off of 70 shows the sort of observed
+relationship between lead score and customers suspend
+and therefore the difference between the dark blue line
+and the daughter.
+Blue Line estimates the causal impact of providing additional
+customer support, so the difference between what we truly
+observe and the counterfactual of what we would expect
+with no impact is the estimated causal effect and using
+the graph here that looks to be roughly about 150 so we
+could say the causal impact is about 1 50 of additional
+customer support.
+But let's estimate an actual aggression equation toe
+rigorously estimate what this causal impact would be.
+And to do this, we're going to use the L M function again
+that we used to estimate the control that fixed effects
+regression as well.
+And so to estimate our aggression dis continuity model.
+We're going to a type l m for linear model, and we're going
+to specify R Y Variable, which is customer dot spends
+and then we're going to regress are why variable on the lead
+score column, plus the ad dot support column,
+plus the interaction of the two.
+And here we can specify an interaction between two X
+variables that are by using the colon.
+And then we just specified the data set that these variables
+come from, and so we can run this model to estimate our
+regression dis continuity equation.
+And basically what we're doing here is we're regressing R y
+variable of interest against the X variable with the dis
+Continuity point, which is lead score, an indicator for post
+the dis continuity cut off, which we can specify as indicator
+for lead score greater than or equal to 70 and that is
+already specified by the ad dot support column and then
+the interaction of the two so lead score interacted with ADOT
+Support column using the colon.
+And conceptually, what this will do is this will fit
+to separate regression lines
+one before and one after the disk continuity cut off
+because we're going to have a different intercept represented
+by ADOT Support and a different slope represent
+by the interaction of ADOT Support with lee dot dot score
+post the cut off compared to the data below, uh, the 70 cut
+off points and then to estimate the causal impact.
+What we do is we compare the two regression lines
+to one another and see whether they are statistically
+different from one another by checking whether the intercept
+and slope terms post cut off are statistically significant.
+And we can use the Stargazer package to review our regression
+discontinuity results, and we see that the dot score is
+significant, which means there is a general relationship
+between customers spend and lead score, which we expected
+from the plot and then the intercept post.
+This continuity cut off, specified by checking
+whether the lead score is greater than or equal to 70 is not
+significant, which is the odd dot support variable here.
+But the slope post this continuity point specified
+by the interaction term between lead scorn.
+ADOT support is significant here and positive, and this shows
+that there is a different relationship pre and post cut off,
+suggesting that additional support actually has a causal
+impact on customer spent and to quantify this causal
+relationship, what we need to do is compare the difference
+in their aggression lines pre and post the dis continuity.
+And we can do that by, um, kind of taking the interest
+from the indicator term post cut off and also the interaction
+term times the cough value of 70 to sort of look
+at the difference between the two regression lines and to get
+the difference between the two regression lines, we need
+to access the coefficients from our fitted model.
+We can access our coefficients by typing co f of model one,
+which is the object restored.
+Our motor results in, and we can run this to see
+the different coefficients.
+And so now what we want to do is calculate the difference
+between the regression lines at the cut off to get the causal
+impact.
+And in order to do that, we need to take, uh, the intercepts
+post cut off, which is going to be this ad dot support true
+coefficients.
+And we can sort of access that by calling coif on our fitted
+model object and then specifying in brackets the name
+of the coefficient that we want a pole.
+And so this is going to be the intercept post cut off
+and that what we need to do is add in the slow post cut off
+times the cut off value for 72 sort of go.
+And then the combination of these two things will be
+the causal impact.
+And so let's put in the name of the slope term post cut off.
+And so here we have our code to calculate the difference
+between the regression lines of the code of point, which
+will be the causal impact.
+And that's estimated to be about 165 which is pretty similar
+to the rough 1 50 that we estimated just by looking
+at the plot here.
+So we see that the results intuitively line up to one another,
+and so that is all there is to running a regression
+discontinuity.
+We just estimate a linear aggression with a turn for the X
+variable with the dis continuity an indicator for the dis
+continuity, which is generally a function of the X variable
+being above or below a particular point.
+And then the interaction of the X variable and the dis
+continuity point.
+And then to see if there's a causal impact here.
+We then check for significance in the indicator for the dis
+continuity points and then also look at the interaction terms,
+and we use both of those toe estimate the actual causal
+impact, which becomes just the difference between their
+aggression lines pre and post the cut off points.

@@ -1,0 +1,56 @@
+We will start our tour of causal inference techniques
+for data science by first reviewing some of the types
+of questions that data scientists often get.
+So data scientists are typically tasked with a wide array
+of questions at a company they can work on sort of various
+different types of functions, ranging from marketing
+to business strategy to product, to strategy and operations
+to customer support.
+And typically, though, these questions take a specific type
+of form, they all end up in the format of Does X Cause Y?
+And there are some examples here of that.
+For example, do free trials increase revenue or to sail
+support Dr Renew ALS?
+Or Why did ABC Metric change this month?
+And so, typically, data science questions that fall
+into the standard format have a lot of commonalities.
+And here are kind of three of the main commonalities you
+might notice when looking at these questions first is that
+there is some outcome metric of interest.
+Why that you want to measure the ultimate impact.
+You want to measure the ultimate, um, kind of movement in,
+and then there's some variable of interest X and then
+typically, the goal ist estimate this coefficient of interest,
+which is essentially the estimated impact of changing X, are
+variable of interest on why our metric of interest and this
+is what we call the causal impact of Exxon.
+Why? And they were going to use the causal inference
+techniques that we will cover in this course to estimate
+this coefficient of interest slash causal impacts.
+And so what's the central idea of causal inference
+from the intuition behind it and the rial idea behind causal
+inferences that when we cannot do straight a b testing so we
+can't run an experiment?
+We have to be a little bit more clever in isolating
+the causal impact of Exxon.
+Why and the central idea and causal inference is that we're
+essentially trying to control for all possible confound er's
+and look for natural sources of variation that will split our
+data into quasi random groups and therefore will mimic
+the random ization we would get from a B testing.
+So all that causal inferences trying to do is remove
+the effect of all the potential confound er's to return back
+to the assumptions that we would have when doing a B testing
+so we can essentially get to groups that have effectively
+been randomly split, and therefore we can isolate the impact
+of our variable of interest on our outcome metric of interest.
+And so, in this course we will cover five different methods
+for causal inference.
+And you can see here that they are controlled regression,
+regression, dis continuity, difference, indifference,
+instrumental variables.
+And then we'll cover some techniques that blend machine
+learning and causal inference together.
+And so the next sections will die.
+I will die deeply into each one of these techniques
+one by one.

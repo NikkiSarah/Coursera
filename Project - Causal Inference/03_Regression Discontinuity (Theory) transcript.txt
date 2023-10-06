@@ -1,0 +1,183 @@
+We will now go over the idea behind regression dis continuity.
+So to motivate our discussion of aggression.
+Dis continuity.
+Let's suppose that we want to measure the effect of adding
+subtitles to a course, and in particular, we might expect
+that adding non English subtitles to a course will increase
+the number of people enrolled in the course because we
+will make the material more accessible.
+And so the first question is, Can we run in a B test
+or a simple experiment?
+And the answer is no, because it's difficult to randomly give
+some learners access the subtitles given product limitation.
+So we can't do random ization on whether subtitles that are
+available or not.
+And then another question is, can we use controlled
+aggression?
+The technique we covered in the previous section?
+Well, the problem is there are un observable
+that we don't have great proxies for, like course popularity.
+And so therefore, our progression models controlled
+aggression would suffer from omitted variable bias.
+And then we therefore wouldn't be able to measure the causal
+impact of Exxon.
+Why? We're having subtitles on the number of enrollments.
+And of course, and so then another question is what
+about a natural experiment.
+Well, the answer is yes, because it turns out that courses
+are advertised as being available in a language Onley when
+those courses have at least 80% of the materials subtitled
+in a particular language.
+And so this 80% threshold of whether subtitles are available
+and or not is pretty arbitrary.
+And so therefore, courses that have slightly less
+than 80% subtitles should be pretty similar to courses
+that have slightly more than 80% subtitles.
+And we can therefore used the above and below 80% as a random
+ization point to kind of split our data into two samples
+and then recover some of the A B test assumptions.
+And so what we're going to do is we're going to run
+a progression.
+Dis continuity what they cut off point of 80% where why
+Variable is going to be revenue or enrollments.
+And our X variable is going to be the percent of the course
+that its subtitle there percent of materials in a course
+that air subtitled in a particular language.
+And so here's a graph that shows everything you will need
+to know about regression, dis continuity and so there's a lot
+of information here, and so let's kind of unpack it.
+But the central idea in regression dis continuity is
+that we want to focus on our randomized cut off point.
+So, in our case, the percent of a course that is subtitled
+and having a regression discontinuity of 80% and this cut off
+point can be thought of as a local randomized experiment
+that splits your data into two samples.
+And we're going to therefore treat our data as two groups
+in a B test where one group is called the Control, which is
+prior to the cut off for Dis Continuity Point.
+And another group is going to be the treatment, which is
+the post cut off group.
+And then we're What we're going to do is we're going to fit
+two separate regression lines, one before the cut off
+and one after the cut off using the same model.
+And then the way we're going to kind of fifties to regression
+lines is we're going tohave the sort of specifications
+that you can see here.
+So we're gonna take our y variable on.
+We're going to regress it on an intercept.
+The X variable of interest.
+And then we're going to regress it on whether a new indicator
+for whether the X variable is above or below the cut off
+for that particular observation.
+And then we're gonna add on an interaction term between our X
+variable of interest and an indicator
+for whether that observation is above or below the cut off
+in terms of its X value.
+And then what you'll see here is that supposing we are
+below the cut off point.
+And so there are indicators air all zero.
+And then these two terms drop out, and then our regression
+model is just going to be y equals r intercept plus B
+one times the x coefficient.
+And then the slope here is going to be be one on Lee.
+So we have a regression line sort of prior to the cut off
+with an intercept of zero and a slope of the one.
+And then we're going to look at what the regression line
+would be if we fit it after the cut off and after the cut off.
+These indicators are both value of one, so we have the same
+terms as before.
+Except now we have two additional terms of be, too.
+So it's sort of a new intercept of B zero, um, kind of plus B
+two. And then we have a another slope term of B three times
+Act. So we have a sort of combined slope term of B one plus B
+three, and so then we can see that essentially that before
+and after the cut off, we have these two separate regression
+lines. And then, if what we kind of do is compare sore for
+courses or observations that are kind of just below in just
+above the cut off, we compare where they are on the two
+regression lines and take a difference between the two
+regression lines.
+We'll see that the difference in the two regression lines
+because the slopes are going to be very close to one another,
+is going to be approximately the kind of intercept at the cut
+off point.
+And you can think of this intercept at the Cup of Point as
+the causal impact because it's the difference in the two
+regression lines, pre and post the cut off.
+And remember, because we have this cut off that sort of
+randomly assigned, we can think of it as randomly dividing
+our sample into two groups.
+And so what we're doing is we're essentially comparing the
+averages near the cut off for observations that are close by
+and comparing the difference in the the sort of average y
+value between those two groups of observations and the
+central idea behind this, um, pre and post splitting.
+Is that the priest splitting?
+And so the progression line prior to the cut off is serving
+as a counterfactual or what we would observe if there was no
+impact at the dis continuity point.
+And so this allows us to kind of back out what the causal in
+causal impact is of Exxon.
+Why using this regression?
+Discontinuity points.
+And so the regression discontinuity design has a couple
+assumptions.
+The first assumption, which is the most critical one, is that
+the sample is similar above and below the cut off.
+And we need this to be true because this ensures that the cut
+off point is acting as kind of being randomly assigned and
+therefore splitting our sample into two groups and recovering
+some of the A B test assumptions.
+So, as an example, we would need that we would need courses
+below and above the 80% subtitle threshold to be similar to
+one another and so that the discontinuity point is
+effectively randomize ing things.
+And so there are a couple ways we can check for whether this
+assumption is true or not.
+The first is that thesis sample sizes of our group.
+So the number of observations below the cut off and above the
+coop should be roughly the same because there's sort of no,
+um, selection on whether, of course, is below 80% or above.
+80% is just kind of randomly assigned.
+And then the second way thio check it is that the sample just
+below and above the cut off, should be similar on observable
+zor confounding variables.
+So these air other variables that might affect the y variable
+of interest.
+And if our sort of cut off point is actually randomly
+assigned that we shouldn't see any relationship between these
+confound er's and where an observation is in terms of below
+the cut off or above the cut off.
+And then the second assumption we need is that there are no
+confounding discontinuities.
+So in our example for subtitles, we need to assume that
+advertising whether courses available or not in a particular
+language is the Onley differentiator between courses at a 70%
+subtitle value in the 90% subtitle value.
+So that's just below and just above the cut off.
+And, for example, we can't have any emails when, of course,
+gets to 70%.
+Subtitles that are advertising.
+The course is saying it's coming soon because that could
+affect the enrollments that we're getting and bias our
+estimate of the relationship between, of course, crossing the
+80% thresholds.
+And so how do we check for whether this confounding
+discontinuities or not?
+What we can do is we can run placebo tests where we run our
+regression discontinuity design at points other than the cut
+off and check for no effect.
+And so, in our example, our regression discontinuity cut off.
+Was it 80% And so to check their placebo tests and for
+confounding discontinuities, we can run the regression,
+discontinuity and other subtitle thresholds like 20% 30% and
+40% and then we shouldn't see any significant impact at those
+levels, and that allows us to have more confidence that the
+causal impact we're measuring is really due to the, um you
+know, coefficient of interest here.
+In which case it's the percent of, of course, that's
+subtitled whether subtitles are available or not in a course,
+and so that's all there is to a regression discontinuity.
+So I encourage you to go to the coding section to actually
+practice fitting a regression discontinuity design to
+simulated data set.

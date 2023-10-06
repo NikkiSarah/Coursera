@@ -1,0 +1,139 @@
+In this example, we will run through how to fit a difference
+in difference model and let's run this line here to get our
+data set, we can again use call names of that head
+of that to check out the data.
+And for this example, we want to estimate the impact
+of a price change on revenue, which is a common scenario
+that we are often unable to A B tests and we're applying
+Difference in difference makes things easier.
+And let's say that we decided to test the impact
+of increasing prices on revenue.
+We decide toe Onley change prices in Australia, raising them
+by $20 starting in January 2019 and really prices in the US
+the same and want to use the U. S.
+As a controlled market.
+We gather monthly revenue for each market over the years
+of 2018 and 2019 and use this to estimate the impact
+of changing prices on revenue and in this data set, we have
+a time period column, an indicator for the time period
+and whether it is pre or post the price change in January
+2019 the country.
+The observation is from the observed revenue in that month
+for the given country and then the counterfactual revenue
+estimate.
+And here the counterfactual is what we would expect
+if the price change had no effect.
+And it is based on the trend observed in the control market
+in this case, the U. S.
+So let's plot the changes in each market over time
+and the counterfactual as well, by running this line here
+to get a G plot, and then we can zoom in to see what our plot
+looks like.
+And so the solid light blue line here is the revenue
+in the US over time, and then the solid dark blue line is
+the change in Australia revenue over time and the dotted
+light blue line is the counterfactual of the change
+in Australia that we would expect if raising prices had
+no impact.
+And this is based on estimated using the change in the US
+over time.
+And the difference between the solid dark blue line
+and the dotted light blue line is going to be the causal
+impact of the price change.
+And this looks to be about $90 or so, and we should check
+that the state valid difference in difference design
+by ensuring that the parallel trends assumption is satisfied.
+And we can easily see in the graph that the that in the pre
+period before this sort of dotted blue line that the trend
+in the U. S.
+And the trend in Australia were very similar to one another.
+And these lines generally seem to follow one another,
+suggesting that the US conserve as a valid control market
+for this difference in difference design.
+And so now let's actually fit a difference in difference
+model to this data.
+And to do that, we're again going to use the L M function
+and are, and what we'll do is type l M.
+And then specify are why variable, which in this case will be
+revenue.
+We're going to regress that on the period indicator
+for whether it's pre or post the price, change the country
+indicator for whether it's in the U.
+S or Australia and then the interaction of period and country
+using the colon Sign here.
+And they were going to specify that it comes from the data
+set and we can run this line to estimate our difference
+in difference model.
+And so what this is doing is regressing revenue over time
+on an indicator for the period, whether it's pre or post
+the price change, an indicator for the country, whether it is
+the U. S or Australia and then the interaction of time,
+period with the country and effectively.
+What this model is doing is it's going to estimate the change
+over time in Australia, minus the change over time in the U.
+S. Which will remove any changes due to things other
+than the price change.
+Because we're using the U. S.
+As a control market here and to better understand this model,
+weaken right out what the prediction would be in the
+four cases we care about in the U. S. Pre and post the price
+change and in Australia pre and post the price change.
+And we've done that sort of here in the comments.
+And so the revenue in the U. S. Pre pipe price change
+from our model will basically be on lee the intercept
+because the period will be zero because we're not in January
+were not past January 2019 and country is an indicator
+for Australia, so this will be zero, and then the interaction
+term will also be zero because both period and country
+indicators are zero.
+And so that's why our revenue in the U. S. Pre the price
+change just equals the intercept.
+Our revenue in Australia pre the price change will actually
+be the intercepts plus the country, because we're we're going
+to have an indicator for Australia being true,
+while the interaction term will be zero because the indicator
+for a period of zero and then the period term will also be
+zero here and kind of.
+Similarly, the revenue in the U. S.
+Post The price change will be sort of the revenue in the pre
+period, which is just the intercept, plus the period
+intercepts now, because this indicator is now trip and then
+the revenue in Australia post the price change will be
+intercept plus period plus country plus the interaction term
+because both period and country will be true
+because we're looking in at Australia, post the price change
+in January 2019 and then the difference in difference
+estimator.
+What it does is it's looking at the difference of revenue
+in our test market, which is in Australia, and we take
+the post period price change minus the pre period price.
+And so that's what the's to subtraction things to note here.
+And then we subtract from that the difference in the US
+over time.
+And so if you kind of run through the math where
+you'll find is that the interaction term, the period colon
+country here in our difference in difference model is what
+actually represents the causal impact of changing prices
+in our test market, sort of accounting for the change
+over time in our control market.
+And then we can use the Stargazer package on our fitted model
+one here actually view the results from our regression
+equation.
+And what we see for each of the terms that are model is
+that the kind of change over time was positive, denoted
+by the period coefficient here.
+That means that revenue rose naturally over time and then
+similarly, the coefficient on Australia is positive, meaning
+that on average revenue in the Australian market is higher
+than the revenue in the U. S.
+Market and in the coefficient on the interaction term here
+represents the estimated causal impact of the price change,
+and we can see that is about $90 which is what we saw
+visually in the plot.
+And so that's all there is to fitting a difference
+in difference model where what we do is we first identify
+a controlled market and then a treatment market.
+And then we try to use the change over time in the control
+market, toe back out whatever changes we make in the test
+market that are due to things in addition to time or anything
+that we would observe in our control market as well.

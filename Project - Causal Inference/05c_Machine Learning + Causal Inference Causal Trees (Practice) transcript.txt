@@ -1,0 +1,205 @@
+Our last demo were run through an example of causal forests.
+So let's simulate and look at our data set in the same ways
+as we have been doing.
+In this case, we have historical data on customer revenue
+and whether they have received a discount in the past or not,
+along with a set of standard control variables named V
+one through the five, they call him for registration source,
+which is the Social Media Channel Each customer created their
+account from.
+With this data, we might want to know whether there is
+an impact of giving a discount on customer revenue
+and in particular, whether this impact it differs
+by registration source slash Social Media Channel.
+And this is because different channels might have different
+costs of acquisition.
+So depending on the impact of the discount, this might
+or might not be worth it.
+In each case, looking at the impact of discounter revenue
+by Social Media Channel means we're interested in what
+are called hetero genius treatment effects, where
+the treatment effect, or causal impact is allowed to differ
+by characteristics of the observation providing essence, a
+more personalized measure of the causal impacts.
+Last treatment for each observation individually so we
+can run table of the that greatest registration source
+to sort of see what the different registration sources
+that we have.
+Our and we can see that in this data set there are
+four registration sources of Google, Instagram, Twitter
+and big.
+So to start with, let's run a standard or less to get
+the causal impact.
+Assuming that there's no hetero J by observation
+characteristic.
+So for that we're going to type l m of our revenue.
+And we're going to regress that on essentially all variables
+in our data set.
+Except we're going to remove the registration source, call
+him from here so we'll say, minus which of call names
+of death.
+And then we'll specify that we want to remove
+the registration source.
+Call him so running.
+This will give us what a standard Ah, regression
+would provide for homogeneous treatment effects, sort
+of assuming no difference across variables.
+And then second, we're going to run a regression where what
+we do is we interact the discount with the registration
+source to explicitly estimate any hetero genius treatment
+effects across the registration source.
+So to do that, we're first going to start by typing
+by copying this model.
+One regression, pacing it below and then specifying what
+we want to do now is we want to, uh, have all our variables,
+except we want to add the interaction between discount
+and registration source.
+And so for that, we're going to have to remove the subset
+by exclusion here that removes wth e registration source
+column and so running this line will give us what our hetero
+genius treatment effects look like.
+And so now we can again compare models using the Stargazer
+package here by running this live.
+And what we see is that the average estimate of the discount
+from our model from Model One is about 12.5.
+However, from model to we see that there are hetero genius
+impacts that differ across the registration sources
+because the sort of interaction terms here are significantly
+different from zero.
+So the based group here is going to be the Google
+registration source, which has an impact
+of about five compared to the impacts of 10 for Instagram,
+which is five plus five 15 for Twitter, which is sort of the
+five baseline of Google, plus the 10 estimated
+from the interaction term here and then for being the total
+total impact seems to be about 20.
+And so, if we average these across the different groups
+but we actually get is an average of 12.5, which is what
+the sort of average estimated treatment effect in the model
+one is here.
+However, because these interaction terms or significant,
+we therefore know that there is a significant heterogeneity
+in our treatment effects.
+And so now what we want to do is fit a calls a forest model
+and see if the cause of forest can actually learn
+these Hedrick genius treatment effects within the data.
+Without us having to specify it explicitly, so did front
+a cause of forest.
+We're going to use the causal forest function from the G R F
+package, which should have already been loaded by your sort
+of set of functions in the first module of this project.
+So note that, like Glynn, it the cause of forest function
+actually expects.
+Are are set of X variables to be a matrix of predictors,
+and in particular, we have to create a column for each level
+of our registration source categorical variable, and so
+for this.
+We can use the model that matrix function on our registration
+source and the data without the revenue and discount columns.
+And then this will kind of give us our full set of control
+variables that we want to include in the model.
+Absent are Y variable and X variable of interest.
+So to set up our ex variables, we will again use the model
+dot matrix function.
+And we're gonna call that on our data data set.
+Except we want to remove the columns from it specifically
+that represent our by variable of interest, which
+in this case is called revenue.
+And then also we want to remove from it the discount column,
+which is our X variable of interest.
+But we're going to sort of specify the model dot matrix set
+up as a as we would any regression by just saying
+until the period to sort of get all variables there
+and that if we run this line where we're gonna have in our ex,
+uh, matrix here is we're going toe have the full set of X
+variables that we want to use this controls, but we're gonna
+have That's kind of nice, is a different 01 indicator column
+for each of the different registration sources.
+So now we have our data in the format that is required
+by the causal forest function and so weaken type causal
+underscore forests to fit the bottle.
+And to do so, we're first going to specify thesis of X
+variables.
+We want to use potential controls by type beings for Capital
+X equals lower case X So Capital X equals uppercase X
+because we created a capital X object up above and then
+we're going to specify R Y variable, which is going to be
+our read the new column in the data data set.
+And then we're going to specify our treatment or treatment
+slash x variable of interest in the argument w by saying W
+equals that discounts and so running this line will then give
+us our fitted cultural forest function.
+And the defaults within the cause of forest function
+itself are actually reasonable.
+And the model, also by default, will do train test splitting
+so we can pretty much running as is without having to change
+any of the default parameter values air at any additional
+arguments.
+And so let's let's let that run in and it will take a
+somewhat amount of time because their data sets sort
+of pretty big and has a bunch of different variables in it.
+But when it's finished, we can now examine the results of our
+model. So what we want to do is we want to obtain the causal
+forest predictions for our Why variable.
+And so for that we can say creating the object called pred.
+That store is the predictions from the fitted causal forest
+objects.
+So we can just do that and then that what we want to do is
+we want to view the, um, average prediction from our model
+sort of split across registration source to see if it looks
+similar to, ah, the results from our linear regression when
+we ran the kind of hetero genius version where we looked
+at the different interactions.
+And so what we see here is that the average causal impact
+implied by registration sores actually looks quite close
+to those estimated from the linear regression, which is what
+we would expect.
+Except there are slight differences here from the fact
+that the causal trees are also estimating the impact using
+the influence of the other control variables,
+whereas the linear regression did not.
+So now let's look at the feature importance in our fitted
+calls of forest function by calling the variable importance
+function and then sort of cleaning it up and storing it
+into a data frame.
+This is going to be ordered in descending order of feature
+importance.
+And so when we look at the features, we see that it's kind
+of actually choosing being and Twitter as the most impactful
+features.
+And these indicators are the ones with the largest hetero
+genius treatment effects.
+So the causal forest model is able to recover even
+in the presence of other control variables where we actually
+see the most header virginity, which is a great feature
+to have.
+Because if we didn't have a sense already of what are causal
+impacts might differ by in terms of observational
+characteristics, we can use the causal forest to sort
+of in for and discover what those relationships might
+actually be.
+And then finally we're going to do is we're going to view box
+plots of the distribution of our treatment effects for each
+of different registration source and so we can do that using
+sort of the G plot function and the geo box plot variant
+within the G plot function.
+And so running this sort of set of code will create our plot.
+Here we can zoom in a little bit to see what it looks like,
+and then we can see that there's a decent amount
+of variability within each registration source in terms
+of the observed treatment impacts on revenue,
+except that there is a larger difference kind
+of across these different registration sources.
+And the median or sort of average here really looks very
+similar to what we saw in terms of the results
+from the Allouni regression.
+So this is really the great thing about causal forests is
+that they let us personalize treatment effects,
+that each observation based on its characteristics and this
+can be useful In cases like this.
+We want to understand whether serving the discount can be
+valuable or not, depending on user characteristics
+like the registration source.
+So there I was to investigate the causal impact in our data,
+set a little bit more deeply and start to understand it
+on an individual observational level.

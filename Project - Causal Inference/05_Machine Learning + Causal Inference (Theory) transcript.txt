@@ -1,0 +1,295 @@
+So in our last section, we're going to go over
+some econometric methods that are kind of at the intersection
+of machine learning and causal inference that air pretty
+exciting and kind of take the best of both worlds.
+And when we think about kind of the classical causal
+inference approaches that we've discussed in the previous
+sections, they have some weaknesses.
+They tend to fail when there are many co variants or many
+potential controls.
+The model selection can be a bit unprincipled, as we think of,
+for example, in the controlled regression world where we had
+to decide what controls to include or not, we had to balance.
+Both omitted variable bias and included variable bias.
+And there wasn't great rules on how to select whether control
+should be included in a multiple regression model or not,
+and then another weaknesses that these classical approaches
+generally assume linear relationships and no interactions.
+And in particular, we typically use linear aggression to fit
+these models.
+And so we.
+So we assume a linear relationship between our variable
+of interest acts and our outcome of interest.
+Why and when we think about machine learning, there are a lot
+of benefits that kind of counter.
+Some of the weaknesses and classical cause, causal inference
+approaches in particular.
+Machine learning can handle high dimensionality particularly
+well. That's kind of what it was designed for.
+There are principal ways to choose a particular model using
+things like cross validation.
+And there are many non linear models that can handle
+implicitly higher order features that allow us to get at non
+linear relationships between variables.
+And so it really seems like if there was a way for us
+to blend machine learning and causal inference together, we
+could kind of capture the best of both worlds and improve our
+causal inference techniques a lot.
+And so the first way we can kind of combined machine learning
+and causal inference is by using a machine learning form
+of controlled progression.
+And so, if you remember in control of regression, the idea
+was we were going to use variables or reasonable proxies toe
+isolate the cause of relationship of our variable of interest
+by controlling for other variables.
+And the steps were that we would regress.
+Why, on X and a set of controls, see toe, identify
+the coefficient of interest on X.
+We had to be wary of both omitted and included variable
+biases.
+And so the machine learning version of controlled regression
+is We're going to use machine learning models instead
+to control for many potential confound er's and or nonlinear
+effects.
+And there are two types of sort of the machine learning
+versions of controlled regression, and the theory here
+is going to be mostly developed for a binary treatments.
+So an indicator 01 whether an attributes sort of happens
+or not.
+But this everything we discussed will generalize, too,
+you know, continuous coefficients of continuous variables
+of interest.
+And so the two kinds of machine learning versions
+of controlled aggression are called double selection, which
+uses the lasso machine learning model in Double D biased,
+which works for any generic machine learning model.
+And so the way this kind of like double selection or double D
+biased method works is let's suppose you have a Y variable
+and a treatment indicator X that is your variable of interest.
+Then you have a high dimensional set of potential control.
+See, that contains sort of anything you think is useful.
+You're going to split your data set into 22 sets of training
+and a test set.
+And then you're going to fit to lasso regressions on your
+data sets.
+You're going to fit a lasso regression of where you regress x
+your variable of interest on the large side of potential
+controls and another where you're going to regress.
+Why? On the large set of potential controls on your training
+data set, you're going to take those sort of to fitted models
+that you get on your training data set and you're going
+to apply them to your test data set.
+And then you're going to get all the non zero variables
+in the high sort of high dimensional set of controls.
+See, And you're going to use those as controls
+in a controlled regression of why on acts using the full data
+sample.
+And the idea here is that you're kind of using your train
+and test splitting, too.
+Identify the sort of significant, uh, control variables
+that are non zero and selected by the machine learning model.
+And then you're going to use them in a full model where you
+kind of include X and y as well.
+To avoid any potential included variable bias, but also
+you're going toe kind of maximize your ability to explain
+the variance in the data because you've only selected the set
+of significant controls.
+And so, um, there's some great applications of double
+selection in particular on a B test data with the treatment
+assignment and a large set of potential controls that were
+obviously fixed.
+It the beginning of the experiment to avoid this idea
+of included variable bias and the great thing you can use
+double selection for when applying it to a B test data is
+that you can use double selection to reduce a lot
+of the noise when kind of measuring experimental effects
+on small data sets or data sets with small effect sizes.
+And so as an example, let's say that we wanted to test
+advertising.
+Coursera for business, of course, are for business banner
+on the coursera home page.
+So in particular, when we think about anyone going
+to the COURSERA website, very few people who visit
+the website are going to be interested in coursera
+for business.
+So this this banner will attract less traffic in particular,
+will have a small conversion rate, so we're gonna have
+a small effect size.
+And so if we're trying to run a traditional A B test.
+We would run into problems where the sample size required
+to read significance would take a really, really long time
+to measure.
+And so what we can do is we can apply the idea of double
+selection to our A B test, and then we'll use the double
+selection to select for kind of a large potential set
+of controls that will reduce the noise with which
+will measure the impact of kind of adding a coursera for,
+you know, business banner on our outcome of interest, which
+in this case might be like enterprise revenue or something.
+And so here is an example of, um, kind of the impact
+from running this a B test for whether a person sees
+the banner or not against the outcome of interest, which is
+something like enterprise revenue and what you'll see here
+in sort of blue.
+Let's start with the red if you what you see here in red is
+in the dark red line.
+This is kind of the treatment effects from the A B test over
+time and in red is the confidence interval of that treatment
+effects and then in blue.
+You have the treatment effect as measured by applying
+the double selection to the A B test data, and then in light
+blue, you have the confidence interval.
+And if we compare the like solid, dark blue to the dark red
+lines, what you'll see is that the red line is much more
+highly variable, especially early on in the experiments.
+And it takes a while to settle to kind of a single ear value,
+whereas the blue line is much more stable
+throughout the experiments and then also the shaded regions
+for the Blue Line or a lot smaller than the shaded regions
+for the red line, which is related to the level of confidence
+or confidence interval around our estimated treatment effects
+here. And so the so.
+The whole idea from this picture is that kind of applying
+double selection to a B test gives you increase statistical
+power, um, to kind of measure given small and you'll get
+smaller confidence intervals and then you'll kind of decrease
+your time to resolution.
+So this is really good for small samples and small effect
+sizes and a B test, and allow you to measure your impacts
+of interest much more quickly.
+So that was an overview of double selection and then
+the second technique that blends machine learning and causal
+inference are known as causal trees slash causal for us.
+And so the idea is that everything previously assumed what
+are called homogeneous treatment effects.
+And then the idea behind causal trees and forests is that we
+could estimate heterogeneous treatment effects
+and in particular, what this means is that our impact or sort
+of our causal estimate of the impact of Exxon?
+Why will differ on observed criteria or demographics of our
+sample?
+And so what we're going to do is we're going to use trees
+or forest, which is just a collection of trees to identify
+a partition of are sort of demographic space that maximizes
+the observed difference of why between our treatment
+and control groups while balancing over fitting.
+So that's a bit of a mouthful.
+But I think what we'll do is we'll run through an example
+where it will make it really clear what exactly this means.
+But first, let's run through the high level overview
+of the process for how fitting the causal trees works,
+So the first thing we do is we split our data into two halves,
+essentially a training set and the test set.
+What we do is we fit our tree in our forest on one half
+of the data, and then we apply the fitted model to the second
+half toe, estimate the treatment effects, and then
+the heterogeneous treatment effects are going to come
+from the difference in why in our leaf nodes and our leaf
+nodes are going essentially be the nodes at the bottom
+of the tree, and they're going to be the treatment effect
+conditioned on the sea attributes and the leaf notes.
+And then we're gonna have some optimization criteria to run
+this causal tree or causal forest.
+That's going to kind of find the best fit, given the way
+we do the data sampling and then a causal forces essentially
+just going to be an average of a bunch of trees with sort
+of some random sampling to avoid over fitting.
+And so here's Here's a kind of picture that shows you exactly
+what a causal tree looks like and so you can think
+of as a kind of having our two samples.
+We have our sample that's used to fit the model and do
+the splitting.
+And then our sample that's used to estimate the treatment
+effects, which is sort of the testing sample, that we applied
+the bottle, too.
+And so what we do in the splitting sample is we start
+at the top with everyone, and then we identify what variables
+to kind of split our tree on that kind of allow us to get
+at these heterogeneous treatment effects.
+So, as an example in our on our data set, we might end up
+splitting on age.
+So that are sort of one.
+Split has age for above 30 and one has split, has age
+below 30 and then we might find no additional splits
+are needed on the age below 30 group.
+But on the age above 30 group, it turns out that,
+like fit is increased when we split on political party.
+So whether someone is a Democrat or a Republican, and then
+when we kind of see this putting criteria on the causal tree
+on the sub sample, we basically get three groups in the data
+people under 30 and then Democrats 30 or older and then
+Republicans 30 or older and what we do is we take the splits
+that we found in our sub sample, and we apply them to the
+estimating sample to get out the causal impact.
+And so what we do then, is for every observation or type
+of person we want to find, the kind of causal impact
+of or the treatment effect of.
+What we do is we take the attributes of that person and then
+kind of apply them to the tree and followed them down
+the tree and then take the difference between the treatment
+and control in the final leaf node to get it the causal
+impact of our variable of interest on our outcome of interest
+so kind of specifically, let's start with a 19 year old
+Republican.
+So we start at the top of our tree, and then we look
+at the first split, and this first plate is on age,
+whether you're above or below 30.
+And in particular, this person is a 19 year old Republican,
+so they're below 30.
+And so we'd say the causal estimate for them is
+plus five because it's 85 minus 80 which is the treatment
+minus the control group amongst observations in the age
+below 30 leaf knowledge, and then we can look at a 25 year
+old Democrat.
+And so again, a 25 year old Democrat is below 30 so
+the estimate for them would again be plus five.
+But how about a 64 year old Republican?
+A 64 year old Republican is above 30 so they'd go
+in this left half of the tree, and then they go
+to the Republican leaf node, in which case the difference
+between the treatment and control amongst observations
+and that leaf note is minus four.
+And so you can see that depending on the attributes
+of the person, our estimate of the treatment effect
+can differ.
+It can go from plus five thio
+minus four or plus three if you're a 31 year old Democrat.
+And so that's what causal trees they're doing is they're
+essentially choosing the demographics to split the kind
+of sample on that maximize this difference
+between the treatment and control groups among observations
+and that leaf note, and then allow you to get more
+of a personalized treatment effect.
+So this could be really useful, in particular at companies
+where you're trying to understand whether different
+demographics might react differently to particular
+interventions, then allow you to get these heterogeneous
+impacts.
+And so that's kind of an overview of machine learning
+and causal inference, in particular double selection
+and applying it to a B tests and then causal trees and causal
+forests for heterogeneous treatment effects.
+And so thank you very much for kind of your attention
+throughout this course.
+Hopefully, you've got a nice sense of the intuition
+behind the five causal inference techniques that we discussed
+here. Some additional resource is there's a couple of books
+are called Mostly Harmless econometrics, or econometrics
+by Green that are really useful, mostly homeless
+or econometrics.
+There's a nice overview that's a little bit less technical
+econometrics, the very technical book that is really useful
+if you want to get into the nuts and bolts of a lot
+of these techniques.
+And then there's a lot of online courses that you can sort of,
+you know, use in addition to this one for condom metrics
+and causal inference as well.
+And so I encourage you.
+If you haven't had a chance yet to go through some
+of the coding sections where you're actually you know
+practice the techniques you'll see here on simulated data
+sets and really get an intuition on how to fit these models
+within our and then otherwise, I hope you enjoyed the course.
+And if you have, please leave.
+Ah, Reviewer comment as to how this course can be improved.
+Thank you very much.

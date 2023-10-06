@@ -1,0 +1,152 @@
+So the first technique we will cover is called controlled
+regression and to motivate our discussion of controlled
+aggression.
+Let's suppose that we want to measure the relationship
+between products, quality and usage.
+And so here, in this question we have our why variable
+of interest, which is going to be usage.
+We're going to measure usage by the fraction of people who
+complete the second week of ah course online.
+And where are X variable of interest we're going to measure
+by the first week MPs, which is called net promoter score.
+And that's a satisfaction rating on a 1 to 10 scale.
+And then suppose we produce the plot below.
+In our data analysis, where on the Y axis for each NPS rating,
+we show the proportion of users who have completed the second
+week and then what we see here is a positive relationship.
+If we were to do kind of a simple regression line here
+between first weekend PS and the proportion of users
+to complete the second week, and so this would suggest that
+people who give a higher first week MPs would also be more
+likely to complete the second week of, of course,
+except we want to measure this more rigorously to actually
+get at whether ah higher first week MPs causally leads Thio
+Ah, higher likelihood of completing the second week,
+of course.
+And one way we can measure this causal relationship is using
+what is known as controlled regression.
+And so the steps to run controlled aggression are actually
+very simple.
+So there are really only two steps.
+The first step is we do a unit very regression off.
+Why are variable of interest which in this case is usage
+on our variable of interest x, which in this case is
+the product's quality or NPS rating.
+And then second, we do a multiple regression of why on X
+and then also include a set of controls that is, in theory,
+supposed to control for all potential confound ear's that
+could affect the relationship between why and ex here
+and then by having this multiple regression and we've removed
+all potential sources of variation, we could then compare
+the coefficient on X in our, you know, very regression
+to the coefficient in the multiple regression.
+And if the coefficient in the two models are similar
+to one another and r r squared in the second regression is
+close to 100%.
+Then, by the theory of controlled regression, we can use
+this estimated coefficient as the causal impact of Exxon.
+Why? And the rough intuition behind that is if the R
+squared is 100% that we've explained all the variance
+in the data.
+And so then there's sort of nothing else in the model that
+would that we could add to the model to kind of explain
+the variance we see in the data.
+And therefore we could take this coefficient on X as actually
+indicating the true relationship of Exxon.
+Why? And so now let's look at the example of controlled
+regression on the problem.
+We kind of poses the beginning.
+And so here we're gonna look at running controlled aggression
+on our products, quality versus usage problem.
+And so in the table here you'll see the results
+of the regression, and we just played.
+We just display the coefficient on the variable of interest,
+which is first weekend.
+Yes, and you'll also see the R squared variables for the
+two regressions.
+And then the first column here is the, you know, very
+regression, and the second column is the results
+from the multiple regression, and we'll see that.
+But from the, you know, very regression to the multiple
+regression.
+The R squared increases a lot as we add a lot of potential
+controls.
+But the coefficient of interest stays pretty much the same
+between the two regressions.
+The magnitude of increases fairly small and so if you to take
+these results at face value than by the theory of control
+regression, because the R squared increases a lot.
+But the coefficient of interest stays fairly stable
+between the two specifications.
+We can therefore take this coefficient as an estimate
+of the causal impact of first week MPs on the likelihood
+of completing the second week.
+And, of course, and so that's really all there is to running
+controlled regression.
+But when doing so, there's just a couple things to keep
+in mind in terms of pitfalls.
+And the first potential source of error is called omitted
+variable bias and the definition of omitted variable biases
+that we are omitting control variables that matter
+from the model.
+And as an example, we know completion rates of courses differ
+by course length, and so, of course, length should be
+a control variable that we include in the model.
+And if we were leaving out from our multiple regression, that
+would cause omitted variable bias.
+And so a question that's natural to ask is, How would we tell
+whether there is omitted variable bias or not?
+And the easiest way we could do so is to look at the r
+squared in the regression with our control.
+So in the multiple regression and check whether the R
+squared is close to 100% or not.
+And if the R squared is not close to 100% then we know there
+is a lot of potential omitted variables that we have left out.
+And so we need to search for more controls, toe add to our
+model to increase the R squared ah lot while trying to also
+make sure that the coefficient of interest stays stable
+and in the second source of error is called included variable
+bias. And this is kind of the opposite of omitted variable
+bias involves including too many controls.
+And as an example, we could think that time available
+to take courses is a confounding factor because the time
+a person has available will affect whether they're likely
+to complete a course or not.
+And then we could try to use the other courses a person
+is enrolled in as a proxy or control for the time available.
+That a person has.
+And this is kind of intuitive, because if a person
+is enrolled in ah, lot of other courses, then they're gonna
+have much less time to actually complete the specific course
+we're talking about.
+But the problem is, the number, of course, is that a person
+is enrolled in is going to be affected by their perception
+of products quality or their NPS rating.
+Because if they have a low NPS rating and they're not
+satisfied with the product, they're gonna be very unlikely
+to enroll in additional courses.
+And so therefore because there's this relationship
+between our control and are variable of interest.
+Adding this control to the model would induce included
+variable bias in our multiple regression.
+And so a natural question again is how do we tell
+if we have included variable bias or not?
+And the kind of unfortunate answer is that there is really
+no direct way to measure included variable bias.
+But the idea is we want to generally leave out controls that
+are not fixed at the time we observe acts are variable
+of interest.
+And the way to think about this is in time traveling
+in machine learning feature engineering where typically
+you don't want to include variables post observing the label
+or outcome because that can kind of effects.
+Um, your data, where you're kind of using the future
+to predict the past and the same thing here where
+we don't want to include control variables that aren't fixed
+at the time we observe our variable of interest.
+And so that's really kind of all there is Thio controlled
+regression, just a couple steps to run it and a couple
+of potential sources of error.
+And so now I encourage you to move on to the arts section
+where will actually run controlled aggression on a sample
+data set.

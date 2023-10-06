@@ -1,0 +1,225 @@
+Now let's run through an example of how to controlled, slash
+mixed effects regression and are.
+And make sure you have run the previous set up selling
+this notebook and that you see the required are functions
+in the global environment in the top right corner here.
+And then we're going to explore the resulting data set
+that we would get from running this first line here
+of that by calling the call names of that function.
+We can see that our data set has the following columns
+of customers spend customer rating, customer age product
+on Effie time dot effie and total dot purchases.
+And then we can look at the 1st 6 lines in our data set
+by running head of death.
+And then let's imagine that the status that comes from the
+following scenario where we are interested in understanding
+the impact of customer satisfaction on customer spend, And so
+in order to do that, we collect the data set of a bunch
+of individual customer purchases and we capture are y
+variable of interest, which is customer spends a proxy for X
+variable of interest, which is customer satisfaction,
+and we proxy that using customer rating which is an average
+of all ratings given by that customer in the past.
+And then we have other potential X variables to service
+controls in any control progressions.
+We want to run of customer age, a product that Effie, which
+is a fixed effects for the product they bought
+within this individual, purchase a time dot effie for a time
+fixed effects for the year they made their purchase and then
+the total number of purchases the person has made in the past
+in a column here.
+And so what we can do now is we can plot the simple
+relationship between our why variable of interest customers
+spend and our X variable of interest customer rating.
+And we're going to look at that just purely in a scatter plot.
+And then we're also going to just print out the rock
+correlation in the data as well, by running these lines here
+and we can see that the scatter plot is pretty noisy.
+But there does appear to be some positive correlation
+between customer rating and customers spend,
+and that is confirmed by the empirical correlation
+with the data set, which is a positive five point of positive
+5% telling us that there is a positive relationship
+between the two and what we can do now is we can look
+at plots between our Why variable and all the other ex
+variables in the data is that to see if there is
+a relationship that we should include on control for when
+we're running are controlled regressions so we can get
+those plots by just running these lines here.
+And we're gonna zoom in to be able to see the plots more
+clearly.
+But generally we see that there is a relationship
+between time and customer spends where for later years
+customer spend does seem to increase.
+We see there's a relationship between the product
+being purchased and customer spends where certain products
+seem to have more demand than others.
+And we see that there is a relationship between customer age
+and customer spend and total purchases and customers spend
+as well.
+So these air all potentially variables well, I wanna control
+for directly when doing controlled aggression here.
+So now let's get into actually how we can fit thes controlled
+aggression models and are, and the way we would do
+that is using the L. M or linear model function within our
+and so we're going to first fit a simple, naive aggression
+model with no controls that just directly regresses are why
+variable of customers spend on our X variable of interest,
+which is customer rating.
+And for that we can call the L M Function.
+And then we can just specify that we want to take our y
+variable, which is going to be customers spend in this case,
+and we're going to regress it on our customer rating.
+Variable and reminisce.
+Note. Progressing.
+Why on X by this Tilda here to say we want to regress
+customers spend on whatever X variables we type after that.
+And we're going to say customer dot rating for the single X
+variable you want to include in this model right here.
+And then we just put a comma and specify the data set
+and that the data comes from the debt data set.
+It's now when we run, this model will have run the univerity
+regression and start its results into the model one objects
+and then we go.
+Where we're going to do is we're going to run variations
+on this initial model here by including other potential
+control variables.
+And so we can just copy and paste this line in each case
+to speed things up.
+And then for our second model here.
+What we want to do is we want to add additional control
+variable of customer age and so we can add that in by simply
+saying plus customer dot age here and then our next model
+in Model three.
+What we want to do is we want to include Onley, the product
+in time fixed effects so we can include those similar lied
+by saying plus products dot herfi and then also plus time dot
+effie as well.
+And then in our fourth model, we want to include
+all controls, including total purchases and total purchases.
+Here is going to be an example of included variable bias
+because total purchases is not fixed.
+Um, at the time people were giving ratings and so there's
+likely going to be a relationship between total purchases
+and customer reading, because if people have ah higher
+customer rating there, probably also more likely to have made
+more purchases.
+And so this will potentially introduce some bias into our
+aggression as well, until we want to be able to see what
+that might look like in the results.
+And so we're going to add in all the other variables from our
+data set, starting with customer age and then our product dot
+fixed effects and then our time, dot fixed effects and then
+also our total dot purchases as well.
+And then in our last model version here but we want
+to do is include all variables except for total purchases so
+that we're not having any included variable bias here.
+And so, in order to do that, we can just simply copy
+and paste the other variables from our code above making sure
+to at in all the appropriate ones that we want.
+And so now when we copy and kind of run all these lines
+here, we will have estimated our five different models
+and store them each and different objects here.
+And then it seems that we have an error that we need to fix,
+uh, appear for Model two, where our plus sign was not
+correctly accounted for.
+So now we've run all five of our models, and we stored them
+correctly.
+And then now what we can do is we can view the results of all
+our model simultaneously using the Stargazer package, which
+is just a really convenient package to view linear regression
+model results and will omit an overview of how toe use
+the star package or what this code means.
+But if you're interested, it's a pretty straightforward
+package to pick up, and there's a couple of lines here
+that will give you sort of tutorials over the package.
+But for our purposes, we can just sort of run these lines
+and in we'll get printed out to the console or aggression
+table. That compares our coefficient of interest across our
+five different models that we ran and so we can see here
+that we have are controlled and fixed regressions table,
+where we have our five columns for each of the different
+five models that we ran.
+And then we have our customer rating, which is our variable
+of interest here as a row.
+And then we have sort of additional details about
+the different regressions we run and whether there were
+additional controls included.
+Whether there was fixed effects included whether we had the
+included variable bias variable included what the adjusted
+our square R squared of our different regressions are, which
+is an important thing to look at for the theory of controlled
+aggression and then just information about our standard
+arrows for coefficients along with the statistical
+significance and sort of are they significant at the
+15 or 10% level?
+And so, if we focus on this kind of first column here in our
+regression table output, we see this is the results
+from our, you know, very a regression.
+And we see that we have a very, very low are square,
+but we have a coefficient value of 4.9. And one thing is
+that because we're using a simulated data set here, we
+actually know what the coefficient on customer ratings
+should be.
+And what its relationship with customers spend is because we
+simulated the data set and in our data said the coefficient
+on customer rating should actually be to.
+And so we have both the really low R squared where we're not
+explaining much variation in the data.
+And we also are really far off in our estimation of the true
+coefficient on customer rating.
+And so we can know that this is a bad model and it suffers
+from a video motive, omitted variable bias and isn't properly
+telling us whether there was a causal relationship
+between customer rating and customers spend.
+And in subsequent Collins, we have our different regression
+models where we add different control variables.
+And we can see that in the second and third columns when
+we add additional control variables for either customer age
+or product in time fixed effects.
+We increased our r squared a lot, and we bring our
+coefficient on customer rating closer to the true value
+of two.
+But we're still a bit quite.
+I'm still quite a bit far off.
+And so we know we're still suffering from a bit variable bias
+here because we haven't explained 100% of the variation
+in the data as R R squared is below 100% year and so we can
+turn to the fourth column where we haven't adjusted r squared
+of 100%.
+But our coefficient on customer rating is still a bit off.
+It's measured at about 2.5, and this is because of the
+included variable bias from total purchases.
+And so this shows that when running controlled aggression
+included variable bias can even mess you up in cases where
+you're still explaining 100% of the variation in the data.
+And then lastly, we can turn to our fifth column, which
+is are sort of correct model for a controlled aggression.
+In this case, where we've explained 100% of the variation
+in the data that we recovered essentially the true
+coefficient on customer rating of two and so but then
+by the fury of controlled aggression.
+Because we have our coefficient of two and adjusted r squared
+of 100% we can say that there is a positive and significant
+causal relationship between customer rating and customer
+spend such that if we are to increase customer satisfaction,
+we will then in turn increase customer spend and therefore
+customer lifetime value here.
+And so this is an example of how you would run controlled
+aggression and how it works and kind of know in this case
+that because we were working on a simulated data set, we
+actually knew what the true coefficient on customer rating
+waas and so we could compare ah, the results of our different
+models to what that true value should be, allowing us to kind
+of gauge how close we are to what estimating the true cause
+of relationship actually was.
+But in the real world, we wouldn't have this as an option,
+and so we wouldn't actually be able to kind of compare our
+results to what the truth is.
+And so running controlled aggression can really become a bit
+of an art form and a bit random.
+And so that's why people will nowadays prefer the other
+causal inference techniques that we're going to run
+through in subsequent sections and consider them to be more
+reliable and rigorous than controlled aggression.
+It's.

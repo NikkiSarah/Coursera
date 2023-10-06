@@ -1,0 +1,563 @@
+---
+title: "Causal Inference Project"
+output: 
+  html_document:
+    toc: true
+    number_sections: false
+    code_folding: show
+    theme: cosmo
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+editor_options: 
+  chunk_output_type: console
+---
+
+#  {.tabset .tabset-fade .tabset-pills}
+
+## Load Necessary Packages & Helper Functions
+
+```{r setup, message=FALSE, warning=FALSE}
+# # needs to be done manually
+# setwd("J:/AID/Business Functions/Data and Analytical Services/Impact Evaluation
+#       Research/Training_Upskilling Materials/June 2023 Causal Inference Project
+#       (R)")
+# ensure simstudy and grf are installed as well
+source('helper_code.R')
+print("Setup Complete")
+```
+
+## Controlled / Fixed Effects Regression
+
+Suppose we are interested in understanding the impact of customer satisfaction (*Customer Rating* - the average of all ratings provided by that customer in the past) on customer spend (*Customer Spend*).
+
+The controls include *Customer Age*, a product fixed effect *Product FE*, a time fixed effect *Time FE* and the total number of purchases made in the past *Total Purchases*.
+
+```{r}
+# generate a simulated data set
+dat <- sim_fixed_effects_df()
+
+# explore the data
+colnames(dat)
+
+head(dat)
+```
+
+The data is quite noisy, but the correlation coefficient of 5% indicates there is a small positive relationship between Customer Rating and Customer Spend.
+
+```{r}
+# customer Spend vs. satisfaction
+g1 <- dat %>%
+  ggplot(aes(Customer_Rating, Customer_Spend)) +
+  geom_point() +
+  theme_economist() +
+  scale_fill_economist()
+g1
+
+cor(dat$Customer_Rating, dat$Customer_Spend)
+```
+
+We then plot all our other variables against the primary explanatory variable of interest (Customer) to identify which of them should be included in the regression as controls.
+
+```{r}
+# customer Spend vs. time
+g2 <- dat %>%
+  ggplot(aes(Time_FE, Customer_Spend, fill = "A")) +
+  geom_boxplot() +
+  theme_economist() +
+  scale_fill_economist() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, vjust = 0.5))
+
+# customer spend vs. product
+g3 <- dat %>%
+  ggplot(aes(Product_FE, Customer_Spend, fill = "A")) +
+  geom_boxplot() +
+  theme_economist() +
+  scale_fill_economist() +
+  theme(legend.position = "none",
+        axis.text.x = element_text(angle = 45, vjust = 0.5))
+
+# Customer spend vs. customer Age
+g4 <- dat %>%
+  ggplot(aes(Customer_Age, Customer_Spend, fill = "A")) +
+  geom_point() +
+  theme_economist() +
+  scale_fill_economist() +
+  theme(legend.position = "none")
+
+# Customer spend vs. total purchases
+g5 <- dat %>%
+  ggplot(aes(Total_Purchases, Customer_Spend, fill = "A")) +
+  geom_point() +
+  theme_economist() +
+  scale_fill_economist() +
+  theme(legend.position = "none")
+
+# combind all plots
+grid.arrange(g2, g3, g4, g5, nrow = 2)
+
+# observe differences across time & products & customer age
+# need to include in regression to control for their effects
+```
+
+```{r warning=F}
+# compare controlled reg/fixed effect models
+
+# naive regression; no controls
+model1 <- lm(Customer_Spend ~ Customer_Rating, data = dat)
+
+# control for customer age only
+model2 <- lm(Customer_Spend ~ Customer_Rating + Customer_Age, data = dat)
+
+# control for product and time fixed effects only
+model3 <- lm(Customer_Spend ~ Customer_Rating + Product_FE + Time_FE, data = dat)
+
+# full controls; and included variable bias of total purchases
+model4 <- lm(Customer_Spend ~., data = dat)
+
+# full controls; no included variable bias
+model5 <- lm(Customer_Spend ~. -Total_Purchases, data = dat)
+```
+
+The table below presents a summary of all the regression models run.
+
+- Column 1: The baseline univariate linear regression. It has a very low R-squared and a coefficient way off from the known true value (recall this is a simulated dataset). As such, it's a poor model that suffers from omitted variable bias.
+- Columns 2 and 3: Add various controls to the model. R-squared increases by a significant amount, and the coefficient gets closer to the true value, but is still someway off. Hence, these models still suffer from omitted variable bias.
+- Column 4: The model includes Included Variable Bias (IVB), which indicates it can still impact the regression results even when the model is explaining 100% of the variation in the data (R-squared = 1).
+- Column 5: Shows the true model form for this data. R-squared is 1 and the true value of Customer Rating has been derived. We can therefore conclude that there is a positive and significant causal relationship between Customer Rating and Customer Spend.
+
+```{r}
+# see here for more info on stargazer:
+# (1) https://cran.r-project.org/web/packages/stargazer/vignettes/stargazer.pdf
+# (2) https://www.jakeruss.com/cheatsheets/stargazer/
+
+# view coefficient of interest in each regression model
+stargazer(model1, model2, model3, model4, model5, type = "text",
+          style = "aer", omit = c("Constant", "Customer_Age", "Product_FE",
+                                  "Time_FE", "Total_Purchases"), 
+          column.labels = c("Y~X", "Y~X+C", "Y~X+FE", "Y~X+C+FE+IVB", "Y~X+C+FE"), 
+          dep.var.labels = "Controlled / Fixed Effects Regression", 
+          omit.stat = c("f", "ser", "rsq", "n"), 
+          notes = c("True Coef on X=2"), 
+          add.lines = list(c("Add Controls", "No", "Yes", "No", "Yes", "Yes"), 
+                         c("Fixed effects", "No", "No", "Yes", "Yes", "Yes"), 
+                         c("Included Variable Bias", "No", "No", "No", "Yes", "No")))
+```
+
+These days, controlled regression isn't a preferred approach as the true value of the target explanatory variable isn't typically known and therefore it's harder to identify whether you have the appropriate model or not and hence the form of the causal relationship between the variables.
+
+## Regression Discontinuity
+
+Suppose we are interested in understanding the impact of additional customer support (*Add Support*) on customer spend (*Customer Spend*). Also assume that we have a lead scoring model that outputs a score between 0 and 100 of the likelihood that a customer will renew, and that this score was generated by a machine learning model. This lead scoring model has historically worked reasonably well, it's used to decide whether additional support is provided. In this example, additional support is provided when *Lead_Score* is above 70.
+
+However, the machine learning model isn't 100% accurate, so customers just above and just below the threshold score are relatively similar to one another EXCEPT for the provision of additional customer support. Therefore, there's a discontinuity at this threshold that can be compared.
+
+Note that *Counterfactual* presents the trend if additional customer support had no impact on customer spend.
+
+```{r}
+# generate a simulated data set
+dat <- sim_fixed_effects_df()
+
+# explore the data
+colnames(dat)
+
+head(dat)
+```
+
+```{r}
+# generate a simulated data set
+dat <- sim_reg_discontinuity_df()
+
+# explore the data
+colnames(dat)
+
+head(dat)
+```
+
+As the dark blue solid line is the observed trend following the provision of additional customer support, and the dark blue dashed line is the counterfactual, the difference between the two is the the impact of additional support on customer spend i.e. the causal effect. The difference appears to be approximately 150, so we can say that the causal impact is roughly 150 additional customer support. However, we can use a regression model to more rigorously determine the causal impact.
+
+```{r}
+# regression discontinuity plot
+dat %>%
+  ggplot(aes(Lead_Score, Customer_Spend, color = Add_Support)) +
+  geom_line(lwd = 2) +
+  geom_line(aes(Lead_Score, Counterfactual), lty = 2,lwd = 2) +
+  geom_vline(xintercept = dat$Lead_Score[sum(!dat$Add_Support)], lty = 2,
+             lwd = 2) +
+  xlab("Lead Score") +
+  ylab("Customer Spend") +
+  theme_economist() +
+  scale_color_economist() +
+  theme(legend.position = "none")
+```
+
+What we're doing here is regressing the target variable against the explanatory variable, an indicator for the post-discontinuity point, and finally the interaction between the two. Conceptually, this fits two separate regression lines; one before and one after the discontinuity cut-off, because we have a different intercept represented by *Add_Support* and a different slope represented by the interaction term. To assess the causal impact, we compare the regression lines to each other and determine if they are statistically different from one another by checking whether the intercept and slope terms post-threshold are statistically significant. 
+
+```{r warning=F}
+# fit regression discontinuity model
+# note the interaction term between lead_score and add_support
+model1 <- lm(Customer_Spend ~ Lead_Score + Add_Support + Lead_Score:Add_Support,
+             data = dat)
+```
+
+The results show that:
+
+- *Lead_Score* is significant, which means that a relationship exists between *Lead_Score* and *Customer_Spend* (which was expected)
+- the intercept post-discontinuity cut-off specified by checking whether *Lead_Score* >= 70 is not significant as indicated by *Add_Support*
+- the slope post-discontinuity cut-off specified by *Lead_Score:Add_Support* is significant and positive, which indicates that there is a different relationships pre- and post-cut off, and consequently indicates that additional customer support has a causal impact on customer spend.
+
+To assess the magnitude of the difference, we 
+
+```{r}
+# view regression discontinuity model
+stargazer(
+  model1,
+  type = "text",
+  style = "aer",
+  column.labels = c("Y ~ X + I(X > Cutoff) + X * I(X > Cutoff)"),
+  dep.var.labels = "Regression Discontinuity",
+  omit.stat = c("f", "ser", "rsq", "n", "adj.rsq"),
+  intercept.bottom = F
+)
+
+# causal impact is difference in regression lines at cut off
+# I(X > Cutoff) + X * I(X > Cutoff)
+coef(model1)
+coef(model1)["Add_SupportTRUE"] + coef(model1)["Lead_Score:Add_SupportTRUE"] * 70
+```
+
+## Difference in Difference
+
+Suppose we wish to estimate the impact of a price change on revenue. We only raise prices in Australia by $20 from January 2019 and keep prices in the US the same so the US can be used as a control market. The counterfactual demonstrates the expected impact if the price change had no effect, and is based on the observed trend in the control market. 
+
+```{r}
+# generate simulated data set
+dat <- sim_diff_in_diff_df()
+
+# explore data
+colnames(dat)
+
+head(dat)
+```
+
+The solid lines are the observed revenue in the US and Australia over time, and the dotted blue line is the expected result if the price change had had no impact. This is based on the observed change in the US over time. In addition, the difference between the dark blue line and the dotted line is the causal impact of the price change, which looks to be about $90.
+
+We also note that prior to the price change, the trends in the US and Australia are very similar, which satisfies the parallel lines assumption (and hence the US is a valid control group).
+
+```{r}
+# difference in difference plot
+dat %>%
+  ggplot(aes(Time, Revenue, color = Country)) +
+  geom_line(lwd = 2) +
+  geom_line(aes(Time, Counterfactual), lty = 2, lwd = 2) +
+  xlab("Time") +
+  ylab("Revenue") +
+  theme_economist() +
+  scale_color_economist()
+```
+
+Effectively what this model is doing is estimating the change over time in revenue in Australia minus the change over time in the US, which removes any changes due to factors other than the price change. As a result the interaction term represents the causal impact of changing prices in the treatment group, accounting for the change over time in the control group.
+
+```{r warning=F}
+# fit difference in difference model
+model1 <- lm(Revenue ~ Period + Country + Period:Country, data = dat)
+
+# Note what the estimated revenue from the model is in each scenario:
+# Rev in US Pre Price change = Intercept (Period, Country, Interaction all 0)
+# Rev in AU Pre Price change = Intercept + Country (Period, Interaction all 0)
+# Rev in US Post Price change = Intercept + Period (Country, Interaction all 0)
+# Rev in AU Post Price change = Intercept + Period + Country + Interaction
+# Diff in Diff = (Rev in AU Post Price change - Rev in AU Pre Price change) - (Rev in US Post Price change - Rev in US Pre Price change)
+#              = (Intercept + Period + Country + Interaction - Intercept + Country) - (Intercept + Period - Intercept)
+#              = Interaction
+```
+
+- *PeriodPost_Price_Change* indicates the change over time. Its coefficient is positive, which means that revenue rose naturally over time.
+- *CountryAU* is also positive, meaning that on average revenue in Australia was higher than revenue in the US.
+-*PeriodPost_Price_Change:CountryAU* is the estimated causal impact of the price change, which is about $90 - consistent with the plot guesstimate.
+
+```{r}
+# view difference in difference model
+stargazer(
+  model1,
+  type = "text",
+  style = "aer",
+  column.labels = c("Y ~ Post + G + Post * G"),
+  dep.var.labels = "Difference in Difference",
+  omit.stat = c("f", "ser", "rsq", "n", "adj.rsq"),
+  notes = c("Causal Impact = 100"),
+  intercept.bottom = F
+)
+```
+
+## Instrumental Variable
+
+Suppose we are interested in the relationship between using the mobile app and customer retention. We know that the direct relationship between the two is potentially biased, because motivated users are both more likely to use the mobile app and to retain. We can't use controlled regression because we can't directly observe motivation and have no proxy for use in a regression, leading to omitted variable bias.
+
+- *Use_Mobile_App* is a binary indicator for whether the mobile app is used.
+- *Retention* is a binary indicator for customer retention.
+- *Received_Email* is the instrument created in a randomised encouragement trial, which takes a value of 1 when the email sent to the user mentions the mobile app (and nudges them to use it), and 0 otherwise. The instrument is randomly assigned, so its uncorrelated with any confounders like unobserved motivation. Also, because it includes a nudge to get users to use the mobile app, it is a strong first stage predictor in an IV regression.
+- *Unobs_Motivation* is the unobserved normalised motivation score that normally would not be present, but can be used to understand why instrumental variables are useful in this example.
+
+The bottom tapplies show how a standard linear regression will be flawed due to omitted variable bias.
+
+```{r warning=F}
+# function to simulate data set
+dat <- sim_iv_df()
+
+# explore data
+colnames(dat)
+
+head(dat)
+
+# users who use the mobile app have higher motivation; those who retain also have higher retention
+# this biases a naive regression
+tapply(dat$Unobs_Motivation, dat$Use_Mobile_App, mean)
+tapply(dat$Unobs_Motivation, dat$Retention, mean)
+```
+
+```{r warning=F}
+# fit IV model
+
+# naive regression
+model1 <- lm(Retention ~ Use_Mobile_App, data = dat)
+
+# first stage regression
+# regress X-variable potentially suffering from omitted variable bias on the instrument
+model2 <- lm(Use_Mobile_App ~ Received_Email, data = dat)
+
+# second stage regression
+# use the fitted values from the first stage as the explanatory variables
+# the coefficient is the estimated causal impact of the mobile app on customer retention
+model3 <- lm(Retention ~ predict(model2), data = dat)
+
+# two stage least squares for IV
+# run both stages simultaneously
+model4 <- ivreg(Retention ~ Use_Mobile_App | Received_Email, data = dat)
+
+```
+
+The first column indicates that using the mobile app would increase customer retention, but we know that it suffers from omitted variable bias and therefore presents an inaccurate estimation of the causal impact.
+
+The second column contains the coefficient for part 1 of the two-stage regression. Receiving an email is significantly related to using the mobile app with an F-statistic above 14, which is desired for a strong instrument.
+
+The third column is the actual IV estimate from the two-stage regression and the coefficient represents the actual causal impact of mobile app usage on retention. It is positive and statistically significant, indicating that there is a real effect.
+
+The fourth column is the result of running both stages simultaneously, and the coefficient is the same as the third column.
+
+```{r}
+# compare all models
+stargazer(
+  model1, model2, model3, model4,
+  type = "text",
+  style = "aer",
+  column.labels = c("Y~X", "X~Z", "Y~Xhat", "IV"),
+  omit = c("Constant"),
+  dep.var.labels = c("Retention", "Use.Mobile.App",
+                     "Retention", "Retention"),
+  covariate.labels = c("Use.Mobile.App", "Received.Email",
+                       "Use.Mobile.App.Hat"),
+  model.names = F,
+  omit.stat = c("ser", "rsq", "n", "adj.rsq"),
+  intercept.bottom = F
+)
+```
+
+## Double Selection
+
+Double selection is the machine learning equivalent of controlled regression.
+
+Suppose that we are interested in analysing the results of an A/B test on social proof. We randomly assigned some customers to a variant that showed them testimonials from other customers on their satisfaction with their purchase. The control group received no testimonials. We wish to determine whether showing testimonials will increase customer value and drive revenue.
+
+Because this is an A/B test, we could just look at the average difference between treatment and control groups. However, using double selection can reduce statistical noise in the causal impact estimate increase estimate precision.
+
+Note that *V1*, *V2* etc are all potential controls for the model.
+
+If we were to use controlled regression in this, we run the risk of an included variable bias due to the large number of potential controls.
+
+```{r warning=F}
+# function to simulate data set
+dat <- sim_double_selection_df()
+
+# explore data
+dim(dat)
+
+colnames(dat[, 1:10])
+
+head(dat[, 1:10])
+```
+
+```{r warning=F}
+# fit double selection model
+
+# isolate control variables
+C <- dat %>% dplyr::select(-c(Customer_Value, Social_Proof_Variant))
+# coerce to a matrix
+C <- as.matrix.data.frame(C)
+
+# fit lasso regressing outcome on control variables
+y_glmnet_model <- cv.glmnet(C, dat$Customer_Value)
+
+# extract nonzero coefficients from lasso above
+# use lambda min CV within 1 se of the smallest optimal lambda - more
+# conservative than using the minimum from the cross-validation results and
+# hence minimises the chance of overfitting
+predict(y_glmnet_model, s = "lambda.1se", type = "nonzero")
+# extracts the indexes of the non-zero columns from the full list of controls
+nonzero <- unlist(predict(y_glmnet_model, s = "lambda.1se", type = "nonzero"))
+# extracts the column names of those non-zero columns i.e. the subset that the
+# model thought was important for predicting the outcome variable
+y_on_C <- colnames(C)[nonzero]
+y_on_C
+
+# repeat but regress the primary explanatory/X variable on the control variables
+# fit lasso regressing treatment on control variables
+X_glmnet_model <- cv.glmnet(C, dat$Social_Proof_Variant)
+
+# extract nonzero coefficients from lasso above
+# use lambda min CV within 1 se (select less coeff)
+predict(X_glmnet_model, s = "lambda.1se", type = "nonzero")
+nonzero <- unlist(predict(x_glmnet_model, s = "lambda.1se", type = "nonzero"))
+X_on_C <- colnames(C)[nonzero]
+
+# empty as X was randomly assigned so wouldn't expect any of the controls to be
+# significant in predicting X.
+X_on_C
+
+# combine two sets of nonzero coefficients to get unique nonzero
+# coefficients across models
+var_union <- unique(y_on_C, X_on_C)
+
+# count number of nonzero variables
+length(var_union)
+
+# use all nonzero coefficients + treatment indicator
+# in double selection regression
+dat_sub <- dat %>% 
+  dplyr::select(Customer_Value, Social_Proof_Variant, all_of(var_union))
+
+double_selection <- lm(Customer_Value ~ ., data = dat_sub)
+```
+
+```{r}
+# compare naive model, full model, and double selection
+
+# naive regression
+naive_regression <- lm(Customer_Value ~ Social_Proof_Variant, data = dat)
+
+# regression with full controls
+full_model <- lm(Customer_Value ~., data = dat)
+```
+
+The results indicate that the double selection model is the most accurate in terms of being the closest to the true simulated causal impact of 2 in the dataset as well as the smallest se on the coefficients. These two things in combination mean that the double selection model is the best and hence has the potential to be both more accurate in estimating mean effects AND more precise in providing smaller ses.
+
+```{r}
+# compare all models
+stargazer(
+  naive_regression, full_model, double_selection,
+  type = "text",
+  style = "aer",
+  column.labels = c("No Controls", "All Controls", "Double Selection"),
+  dep.var.labels = c(""),
+  covariate.labels = c("Social.Proof.Variant"),
+  omit = c("V[0-9]", "Constant"),
+  model.names = F,
+  omit.stat = c("ser", "rsq", "n", "adj.rsq", "F"),
+  notes = c("Causal Impact = 2")
+)
+```
+
+## Causal Forests
+
+This dataset contains historical information on customer revenue, whether or not they receive a discount in the past, a set of control variables and the channel used by each customer to create their account.
+
+Suppose that we wish to know if giving a discount has an impact on customer revenue, and whether this impact is different across the registration channels because the different channels may have a different cost of acquisition. This means that we're interested in heterogeneous treatment effects, where the treatment effect or causal impact is allowed to differ by characteristics of the observation and therefore basically provides a more personalised measure of the causal impacts/treatment for each observation.
+
+```{r}
+# function to simulate data set
+dat <- sim_causal_forest_df()
+
+# explore data
+colnames(dat)
+
+head(dat)
+
+table(dat$Registration_Source)
+```
+
+```{r warning=F}
+# regular OLS - assuming homogenous treatment effects / no difference across
+# Registration Source
+dat_sub <- dat %>% dplyr::select(-Registration_Source)
+model1 <- lm(Revenue ~ ., data = dat_sub)
+
+# OLS with interactions for heterogeneous treatments by source
+model2 <- lm(Revenue ~. + Discount*Registration_Source, data = dat)
+```
+
+We observe that the estimated average discount from model 1 is about 12.5, but according to model 2, note that the impact differs by registration source because the interaction term coefficients are significantly different from 0. The base group is Google, which has an impact of about 5.1, compared to 10.1 for instagram (5.1 + 5.0), 14.9 for twitter (5.1 + 9.8) and 20.0 for bing (5.1 + 14.9).
+
+Now we want to fit a causal forest model to determine if it can learn these heterogeneous treatment effects present in the data without having to specify them explicitly.
+
+```{r}
+# compare OLS models
+stargazer(
+  model1, model2,
+  type = "text",
+  style = "aer",
+  column.labels = c("All Controls",
+                    "All Controls + Group Interactions"),
+  dep.var.labels = c("", "", ""),
+  covariate.labels = c(
+    "Discount",
+    "Discount x Instagram",
+    "Discount x Twitter",
+    "Discount x Bing"
+  ),
+  omit = c("V", "Constant", "^Registration.Source"),
+  model.names = F,
+  omit.stat = c("ser", "rsq", "n", "adj.rsq")
+)
+```
+
+Note that the causal forest default hyperparameters are reasonable and the algorithm automatically performs a train-test split.
+
+```{r warning=F}
+# fit causal forest
+# creates a separate indicator column for each registration source
+dat_sub <- dat %>% dplyr::select(-c(Revenue, Discount))
+X <- model.matrix(~., data = dat_sub)
+
+cf <- causal_forest(X = X, Y = dat$Revenue, W = dat$Discount)
+```
+
+Observe that the average causal impact implied by registration source is very close to the linear regression estimates, except that the causal tree is also accounting for the influence of the control variables, which the linear regression did not.
+
+The feature importance results indicate that the model considered Bing and Twitter to be the most impaction features, which coincidentally are the sources with the largest heterogeneous treatment effects. This means that the causal forest model is able to recover where the most heterogeneity exists, even in the presence of control variables, which is a great feature to have because a causal forest can then be used to identify sources of heterogeneity in the explanatory variables that weren't immediately obvious.
+
+The boxplots indicate that there's a decent amount of variability within each registration source in terms of the observed treatment impacts on revenue.
+
+```{r}
+# obtain causal forest model predictions
+pred <- predict(cf)$predictions
+
+# view average causal forest model predictions by source is estimate of
+# heterogeneous treatment effect
+tapply(pred, dat$Registration_Source, mean)
+
+# extract variable importance from causal forest model
+cf %>%
+  variable_importance() %>%
+  as.data.frame() %>%
+  mutate(variable = colnames(X)) %>%
+  arrange(desc(V1))
+
+# plot distribution of causal forest model predictions by sources
+data.frame("est" = pred, "Registration_Source" = dat$Registration_Source) %>%
+  ggplot(aes(Registration_Source, pred, fill = Registration_Source)) +
+  geom_boxplot() +
+  xlab("Registration Source") +
+  ylab("Estimated Treatment") +
+  theme_economist() +
+  scale_fill_economist() +
+  theme(legend.position = "none")
+```

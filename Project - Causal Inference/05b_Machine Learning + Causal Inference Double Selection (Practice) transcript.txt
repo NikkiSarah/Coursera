@@ -1,0 +1,245 @@
+We will now cover the machine learning version of controlled
+regression called Double Selection.
+Let's suppose we are interested in analysing the results
+from an AP test on social crew.
+We randomly assigned some customers a very in that show them
+testimonials from other customers on their satisfaction
+with their purchase.
+There was also a control variant that had no testimonials,
+and we now want to know whether showing testimonials
+might increase customer value and drive revenue.
+Because this is an A B test, we can just look at the average
+difference between treatment and control groups.
+But as we saw in the lecture section, using double selection
+can reduce statistical noise in our estimate of the causal
+impact and also allow us to have a more precise estimate
+and faster time to resolution in the test.
+So to get started, let's run this line to simulate our data
+set and run coal names and head of data to check things out.
+Because we are working with the higher dimensional data set
+in this case, we will limit the columns that
+be examined running dim of that, we see that we have
+1000 rows and 500 columns.
+502 columns and looking at the column names with call names
+of that, we see that we have a customer value column for Why
+Variable?
+A social proof variant indicator for our X variable
+of interest in 500 other columns the noted V one v two et
+cetera, that are long list of potential controls we
+might want to include in our model.
+If we were to run regular controlled regression in this case,
+we might run the risk of included variable bias
+because of the large number of potential controls.
+And so double selection could help us avoid that by choosing
+only a subset of that and we can see what the state looks
+like by running ahead of that.
+So now let's run through how to actually fit a double
+selection model, and the steps are outlined here in the code
+file for what we will do.
+First, we need to isolate the full set of potential control
+variables, and we want to do that by sub setting our data
+framed at to take all columns except the customer and social
+proof columns.
+We will use subset by exclusion and to start, we're going
+to first create our object that we want to store our control
+variables in called Capital C.
+And then we're going to subset our dad data frame
+by selecting all columns in that data frame.
+Except for those that represents our why variable of interest
+for customer value and the X variable of interest, which is
+our social proof dot variant columns and then running
+this line will store all of the control variable columns
+in our, uh, object capital city.
+And then the next thing we want to do is coerce Capital C
+to be from a data frame to a matrix for usage later.
+So we can see as dot matrix thought data frame of C and run
+this line to change it from a data frame to a matrix.
+And then now what we want to do for a double selection
+in the next step is second.
+We want to regress.
+Are outcome variable?
+Why, against all possible control variables, using a lasso
+regression and to run alas, of regression, we can use
+the Glynn net package and specify are X and y as major cities,
+and note that again Glynn, it requires our X variable to be
+a matrix.
+And that's why we wanted to coerce E to be a matrix
+from a data frame.
+So we will then use cross validation in Glynn it to allow us
+to use cross validation to find the optimal land of parameter.
+And to do this, we can say we want to have our why.
+Dog limit got model.
+And we're gonna store in this in this object, our results
+from our CV duck limit of see for our set of X variables
+in matrix form.
+And then we're going to specify our dad customer value, which
+is the y variable of interest.
+And so here we're regressing R y variable of interest
+against all the potential controls as specified by double
+selection.
+And then running this line will run our model and store it
+for us here.
+So after running the model, we now want to extract all
+the non zero coefficients from it.
+And for that Glenn, it actually has a handy predict function
+with type equal to non zero that will return all non zero
+coefficients.
+And we also need to specify in this call to the to the
+predict function the Lambda a shrinking shrinkage parameter
+value that we want the coefficients for.
+So we can type lambda 0.1 s e to get the optimal lander
+from cross validation.
+That is within one standard error of this smallest optimal
+Landau.
+And this is just a bit more conservative than using
+the minimum Lambda and prevents over fitting compared
+to choosing the minimum from cross validation.
+And so we can get the non zero coefficients from our model
+by typing the following.
+So we're going to say predicts of our ah stored model name
+why dot guimet dot model And then we're going to specify
+the landed value we want s equal to lambda 0.1 standard error.
+And then we're going to add the type for this prediction
+to be non zero to get all the non zero coefficients.
+So if we run, this line will see that the first
+nine variables in our kind of set of controls were the ones
+that were chosen to be non zero.
+And because this is returned as the data frame, if we
+unlisted it, we can then use it to subset the coal names of C
+to get the actual names of the non zero variables.
+So for that, we're going to create an object called non zero,
+and we're gonna store in its Ah, the unlisted as, um the
+predict here.
+So you just copy and paste that in.
+And then what we'll see here is that in non zero, we will
+then have the indexes of the non zero columns from our A full
+list of controls.
+And so now we can store those actual column names in a object
+called y dot on dot c.
+And for that, we're going to say call names of C to pull
+the column, names of the control variables and our capital C
+objects.
+And then we're just gonna subset this with non zero
+and to see what the results of this look like we can copy
+and paste it down below to actually view.
+It's now when we run this two lines, where we're going
+to see is in the object.
+Why on C?
+We have our nine non zero variables selected by lasso cross
+validation when we predict why, with our full set of controls
+that we have in the model.
+And so this chooses the subset that seem to be important
+for predicting why so our next two steps are going to be
+exactly the same as the last two steps.
+Except instead of regressing the Y variable of interest
+on our full set of potential controls we're going
+to regress are X variable on the full set of potential
+controls.
+So what we want to do, then, is we just want a copy.
+Essentially, all this code up here because we're going to do
+it again.
+Except we're going to change.
+Why? To accent each case.
+So let's first copy are last So regression code to fit
+the last of aggression and then we're just going
+to change are why here to an X to say x dachlan that control.
+And then we're regressing that on instead of customer value,
+is going to be our x variable of interest, which is our
+social proof variance.
+And then we can again copy this same code up here and then
+just make sure to change everything that has a Y on it
+to annex.
+So will predict from our ex Dachlan top model.
+And then we're going Teoh, use an unlisted form of our next
+a Clinton model again store that in non zero and then make
+sure that we store it into the object of ex dot on dot c
+in each case.
+Now, if we run these lines, we will then have all the non
+zero very bills chosen by the cross validation, less so
+in predicting our X variable.
+And what you'll see is that we're predicting our X variable.
+It takes none of the potential controls and this isn't super
+surprising because this variant was randomly assigned in a B
+test in this example.
+And so we wouldn't expect any of the controls to be
+significant and predicting the expiry able.
+So now what we want to do in the next step for double
+selection is we want to take the union of the two sets of non
+zero coefficients and store them in an object for use
+in the final regression.
+So what we're going to do is create an obstacle Vardar union
+to contain the combined set.
+And we're just going to take the unique combination of our
+two sets of, um, non zero coefficients by just saying
+the unique of the combination of these two things.
+And then when we run this code, we will then have stored
+in this bar union objects the complete set of unique joined,
+non zero variables.
+And then what we can do is we can count the number of non
+zero variables that we wanted Teoh by just simply printing
+out Bardot union or, you know, even saying length of our dot
+union to actually see what they are later on, which we
+already did previously.
+So now the last step in our double selection model is
+to actually regress.
+Why on our X variable of interest and then the set
+of controls that were chosen in a regular linear regression
+And this is going to be the final double selection model that
+we actually use to report are causal impact.
+So for this, we can use the regular l M function, but choose
+to select on Lee the relevant columns in the data set.
+And so for that, we're going to store in a object called
+double about selection the results of ah l m regression
+by typing l m of bye bye variable.
+We want Teoh regress on, which is going to be customer dot
+value. We're going to regress that on all variables which
+weaken denote by the period symbol from our data data set.
+Except we're going to include Onley, a subset of the columns
+which is going to be customer dot value our social proof
+variance, which is our X variable of interest and then
+the variable names in Bardot Union.
+So this we run it will then fit our double selection model
+and store it into that objects.
+So let's also compare our double selection model to a naive
+regression where we just use the social proof variant
+of interest in the X variable.
+And that's going to be what we would get from a standard A B
+tests results that were produced there.
+And then we also can use a full model that uses all potential
+controls and so didn't go through ah, double selection,
+but did kind of the naive thing.
+So for the naive regression weaken type L. M.
+Of customer value here and what we want to do is then regress
+customer value just on the social doc proof dot variant X
+variable of interest.
+And then we make sure to specify that the data is coming
+from the data data set so running this will just runner naive
+regression and then for the full model.
+What we can do is we can sort of again say we want to regress
+customer value on all variables in noted by the period,
+and then specify the data set comes from that.
+Except this time, we don't subset the columns of that to just
+include everything as a potential control variable.
+There, we can run this from our full model.
+And so now that we've run all our models, all the different
+versions of the models we want to, we can then use
+the Stargazer package to compare the results of each model.
+So let's run the stargazer package here and so we can look
+at the coefficients and estimated standard errors
+on the social proof variants, uh, indicator here, across all
+the different models in the data set.
+And then what we can see is that the stubble selection model
+here is the most accurate in the sense that is the closest
+to the true simulated causal impact of to in our data set.
+But it also has the smallest kind of standard error
+on the coefficients.
+And so because it achieves both a smaller standard error
+and is closer to the true causal impact of two here.
+We know that the double selection model is actually the best.
+And so here we can see that double selection has
+the potential to be both more accurate in estimating mean
+if axe, but also more precise and in providing smaller
+standard errors.
+And this is kind of a couple of reasons why using double
+selection to augment and speed up your A B tests can be a
+really powerful method in data science.
