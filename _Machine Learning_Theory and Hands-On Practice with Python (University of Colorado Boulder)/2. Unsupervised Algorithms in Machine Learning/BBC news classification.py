@@ -1,24 +1,22 @@
+# get rid of the seaborn FutureWarning
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import spacy
-
+from wordcloud import WordCloud
 
 ## Task 1: Extract word features and show EDA - inspect, visualise and clean data
-# Show a few visualizations like histograms. Describe any data cleaning procedures.
-# Based on your EDA, what is your plan of analysis?
-#
-# Look at online resources on processing raw texts to feature vectors. Many methods process texts
-# to matrix form (word embedding), including TF-IDF, GloVe, Word2Vec, etc. Pick a method and process the raw texts to
-# word embedding. Briefly explain the method(s) and how they work in your own words. Also, do exploratory data analysis
-# such as word statistics and/or visualisation.
-
 # load the data
 train = pd.read_csv('data/learn-ai-bbc/BBC News Train.csv')
 test = pd.read_csv('data/learn-ai-bbc/BBC News Test.csv')
 
 # take a look at the first few rows of each dataset - notice that the test dataset doesn't include labels so we're not
 # going to be able to use it for model testing. Instead, we're going to have to rely on the training dataset.
+# also note that all the text is already in lower-case, which means it doesn't have to be included in the data
+# # cleaning.
 train.head()
 test.head()
 
@@ -29,23 +27,36 @@ sns.countplot(data=train, x="Category", color="seagreen")
 plt.title("Distribution of articles by category")
 sns.despine()
 
-
-# plot the distribution of article token counts (using the raw unprocessed text)
-
-
-# visualise the noun phrases
-
-
-
-# load the english tokeniser, tagger, parser and NER
+# load the english spacy model
 nlp = spacy.load("en_core_web_lg")
-docs = [text for text in train.Text]
+# apply the spacy model to the training data
 processed_docs = [nlp(text) for text in train.Text]
+
 # extract noun chunks
-noun_phrases = []
+doc_noun_phrases = []
+doc_noun_phrases_joined = []
 for doc in processed_docs:
     phrases = [chunk.text for chunk in doc.noun_chunks]
-    noun_phrases.append(phrases)
+    phrases2 = [phrase.replace(" ", "_") for phrase in phrases]
+    doc_noun_phrases.append(phrases)
+    doc_noun_phrases_joined.append(phrases2)
+noun_phrases = [phrases for doc in doc_noun_phrases for phrases in doc]
+noun_phrases_joined = [phrases for doc in doc_noun_phrases_joined for phrases in doc]
+
+train['noun_phrases'] = doc_noun_phrases
+train['noun_phrases_joined'] = doc_noun_phrases_joined
+
+# convert list to strings
+doc_noun_strings = [" ".join(doc) for doc in doc_noun_phrases_joined]
+
+# consider getting rid of single words
+
+wc = WordCloud()
+wc.generate(train['noun_phrases'])
+plt.imshow(wc, interpolation='bilinear')
+plt.axis("off")
+
+
 
 # text is already in lower-case so no need to do anything
 tokens_list = []
