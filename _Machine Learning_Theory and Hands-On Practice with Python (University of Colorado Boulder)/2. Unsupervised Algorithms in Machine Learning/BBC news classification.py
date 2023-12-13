@@ -3,6 +3,7 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import spacy
@@ -89,22 +90,74 @@ train['NounPhrasesJoinedSub'] = doc_noun_phrases_joined
 train['NounStrings'] = train.NounPhrasesJoined.apply(lambda x: " ".join(x))
 train['NounStringsSub'] = train.NounPhrasesJoinedSub.apply(lambda x: " ".join(x))
 
-wc = WordCloud()
-wc.generate(train.NounStrings[0])
-plt.imshow(wc, interpolation='bilinear')
-plt.axis("off")
-
-wc = WordCloud()
-wc.generate(train.NounStringsSub[0])
-plt.imshow(wc, interpolation='bilinear')
-plt.axis("off")
+# create a colour map dictionary and convert the RGB tuples to hexidecimal
+color_dict = {'business': sns.color_palette("crest")[0],
+              'entertainment': sns.color_palette("crest")[1],
+              'politics': sns.color_palette("crest")[2],
+              'sport': sns.color_palette("crest")[3],
+              'tech': sns.color_palette("crest")[4]}
 
 
+def rgb_to_hex(rgb):
+    return "#{:02x}{:02x}{:02x}".format(int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255))
+
+color_dict = {category: rgb_to_hex(rgb) for category, rgb in color_dict.items()}
+
+# group and join the phrases from each category
+grouped_train_sub = train.groupby('Category')['NounStringsSub'].apply(lambda x: ' '.join(x)).reset_index()
+grouped_train = train.groupby('Category')['NounStrings'].apply(lambda x: ' '.join(x)).reset_index()
+
+# plot a grid of word clouds
+# even without the headings, it would be reasonably clear what the different categories were about: 'business' mentions
+# things like markets, companies, the economy; 'entertainment' mentions films, shows and awards; 'politics' is very
+# UK-specific with things the tories and Tony Blair; 'sport' mentions games, matches and players; and 'tech'
+# mentions things like technology, service, internet and names of countries
+fig, axs = plt.subplots(3, 2, figsize=(15,10))
+for idx, (ax, (category, row)) in enumerate(zip(axs.flatten(), grouped_train_sub.iterrows())):
+    category = row['Category']
+    phrases = row['NounStringsSub']
+
+    wc = WordCloud(color_func=lambda *args, **kwargs: color_dict[category])
+    wc.generate(phrases)
+    ax.imshow(wc, interpolation='bilinear')
+    ax.axis("off")
+    ax.set_title(f'{category}', fontsize=12)
+fig.suptitle('Noun Phrase Word Clouds by Category')
+# remove the last empty plot
+fig.delaxes(axs.flatten()[-1])
+plt.tight_layout()
 
 
+fig, axs = plt.subplots(3, 2, figsize=(15,10))
+for idx, (ax, (category, row)) in enumerate(zip(axs.flatten(), grouped_train.iterrows())):
+    category = row['Category']
+    phrases = row['NounStrings']
+
+    wc = WordCloud(color_func=lambda *args, **kwargs: color_dict[category])
+    wc.generate(phrases)
+    ax.imshow(wc, interpolation='bilinear')
+    ax.axis("off")
+    ax.set_title(f'{category}', fontsize=12)
+fig.suptitle('Noun Phrase Word Clouds by Category')
+# remove the last empty plot
+fig.delaxes(axs.flatten()[-1])
+plt.tight_layout()
 
 
-
+## Task 2: Data Pre-Processing
+# The pre-processing for text data is typically slightly different to how it would be approached for a regular tabular
+# dataset. Specifically, it needs to be essentially converted into a numeric representation that a machine can
+# understand. Techniques employed to do this include things like converting all text into a single case (usually
+# lower-case), splitting text into individual words (tokenising), removing extraneous information like punctuation,
+# numbers and symbols, and 'noise' words that provide next-to-no extra information (stopwords). However, more modern
+# approaches using Large Language Models for example, often use this information to provide extra context, so whilst
+# they may still tokenise the text, the removal of certain tokens may not occur. In addition, there is other
+# processing like padding out each tokenised string to the same length and adding a mask to differentiate between the
+# content and the padding.
+#
+# Here, we're going to follow a more classical approach to pre-processing the text. In addition, the EDA indicated that
+# there were some very long articles - we'll remove them to help (in theory) make the classifier's task a little
+# easier.
 
 # text is already in lower-case so no need to do anything
 tokens_list = []
@@ -134,6 +187,31 @@ for doc in processed_docs:
     # and not a stopword
     clean_tokens = [token.lemma_ for token in doc if not token.is_stop and not token.is_punct and token.is_alpha and len(token) > 1]
     clean_docs.append(clean_tokens)
+    # retain only tokens in their lemmatised form that aren't necessarily alphanumeric but follow the other
+    # restrictions
+    clean_tokens = [token.lemma_ for token in doc if not token.is_stop and not token.is_punct and len(token) > 1]
+    clean_docs2.append(clean_tokens)
+# convert list to strings
+train['CleanDocsAlphanum'] = clean_docs
+train['CleanDocs'] = clean_docs2
+
+# remove articles in the top 1%
+# this has very little impact on the mean and median, but brings the maximum word count down significantly (from
+# 3,345 to 464)
+top = np.quantile(train.NumWords, q=0.99)
+train_sub = train.loc[train.NumWords < top]
+
+
+## Task 3: Generate Word Embeddings
+
+
+## Task 4: Unsupervised Learning - Matrix Factorisation
+
+# Yes, we need to include text / word features from the test set in the input matrix as there may be features in the
+# test set only. If the model comes across new features it hasn't seen before during model training then it won't know
+# how to handle them. This isn't classified as data leakage as we aren't predicting anything and hence not using
+# ground truth labels to help the model learn.
+
 
 from collections import Counter
 word_counts = [Counter(doc).most_common(10) for doc in clean_docs]
