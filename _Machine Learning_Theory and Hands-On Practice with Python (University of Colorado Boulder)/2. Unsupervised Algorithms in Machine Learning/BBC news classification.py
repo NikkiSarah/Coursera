@@ -8,7 +8,17 @@ import seaborn as sns
 import spacy
 from wordcloud import WordCloud
 
-## Task 1: Extract word features and show EDA - inspect, visualise and clean data
+# check the backend and change if required
+import matplotlib as mpl
+
+mpl_backend = mpl.get_backend()
+if mpl_backend != "Qt5Agg":
+    mpl.use("Qt5Agg")
+else:
+    pass
+
+
+## Task 1: Exploratory Data Analysis
 # load the data
 train = pd.read_csv('data/learn-ai-bbc/BBC News Train.csv')
 test = pd.read_csv('data/learn-ai-bbc/BBC News Test.csv')
@@ -27,6 +37,24 @@ sns.countplot(data=train, x="Category", color="seagreen")
 plt.title("Distribution of articles by category")
 sns.despine()
 
+# check out the number of tokens in the articles
+train['NumChars'] = train.Text.apply(lambda x: len(x))
+train['NumWords'] = train.Text.apply(lambda x: len(x.split()))
+
+# tech and politics tend to have the largest number of words per article
+# however, the distributions by category are fairly similar i.e. there are more shorter articles and a relatively long
+# right tail to the distribution with a couple of significant outliers
+train.groupby('Category')['NumWords'].median()
+
+fig, axs = plt.subplots(1, 2)
+sns.boxplot(data=train, x="Category", y="NumWords", showfliers=False, color="seagreen", ax=axs[0])
+plt.title("Distribution of word counts by category")
+sns.despine()
+
+sns.histplot(data=train, x="NumWords", hue="Category", color="seagreen", multiple="stack", palette="Greens", ax=axs[1])
+plt.title("Distribution of word counts by category")
+sns.despine()
+
 # load the english spacy model
 nlp = spacy.load("en_core_web_lg")
 # apply the spacy model to the training data
@@ -40,21 +68,41 @@ for doc in processed_docs:
     phrases2 = [phrase.replace(" ", "_") for phrase in phrases]
     doc_noun_phrases.append(phrases)
     doc_noun_phrases_joined.append(phrases2)
-noun_phrases = [phrases for doc in doc_noun_phrases for phrases in doc]
-noun_phrases_joined = [phrases for doc in doc_noun_phrases_joined for phrases in doc]
+# noun_phrases = [phrases for doc in doc_noun_phrases for phrases in doc]
+# noun_phrases_joined = [phrases for doc in doc_noun_phrases_joined for phrases in doc]
+train['NounPhrases'] = doc_noun_phrases
+train['NounPhrasesJoined'] = doc_noun_phrases_joined
 
-train['noun_phrases'] = doc_noun_phrases
-train['noun_phrases_joined'] = doc_noun_phrases_joined
+# create a version without single words
+doc_noun_phrases = []
+doc_noun_phrases_joined = []
+for doc in train.NounPhrases:
+    # lengths = [len(token.split()) for token in doc]
+    phrases = [token for token in doc if len(token.split()) > 1]
+    phrases2 = [phrase.replace(" ", "_") for phrase in phrases]
+    doc_noun_phrases.append(phrases)
+    doc_noun_phrases_joined.append(phrases2)
+train['NounPhrasesSub'] = doc_noun_phrases
+train['NounPhrasesJoinedSub'] = doc_noun_phrases_joined
 
 # convert list to strings
-doc_noun_strings = [" ".join(doc) for doc in doc_noun_phrases_joined]
-
-# consider getting rid of single words
+train['NounStrings'] = train.NounPhrasesJoined.apply(lambda x: " ".join(x))
+train['NounStringsSub'] = train.NounPhrasesJoinedSub.apply(lambda x: " ".join(x))
 
 wc = WordCloud()
-wc.generate(train['noun_phrases'])
+wc.generate(train.NounStrings[0])
 plt.imshow(wc, interpolation='bilinear')
 plt.axis("off")
+
+wc = WordCloud()
+wc.generate(train.NounStringsSub[0])
+plt.imshow(wc, interpolation='bilinear')
+plt.axis("off")
+
+
+
+
+
 
 
 
