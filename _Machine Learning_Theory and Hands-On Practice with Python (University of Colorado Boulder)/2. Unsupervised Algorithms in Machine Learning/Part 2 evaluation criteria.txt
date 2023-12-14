@@ -25,16 +25,3 @@ That’s why we stick with sklearn in this course for learning purposes.
 
 Includes both of the following: mentions that the zero values in X being the ground truth during the optimization is a
 problem and mentions any idea(s) to reduce the error.
-
-Movielens 1M 	RMSE 	MAE 	Time
-SVD 	0.873 	0.686 	0:01:07
-SVD++ (cache_ratings=False) 	0.862 	0.672 	0:41:06
-SVD++ (cache_ratings=True) 	0.862 	0.672 	0:34:55
-NMF 	0.916 	0.723 	0:01:39
-Slope One 	0.907 	0.715 	0:02:31
-k-NN 	0.923 	0.727 	0:05:27
-Centered k-NN 	0.929 	0.738 	0:05:43
-k-NN Baseline 	0.895 	0.706 	0:05:55
-Co-Clustering 	0.915 	0.717 	0:00:31
-Baseline 	0.909 	0.719 	0:00:19
-Random 	1.504 	1.206 	0:00:19

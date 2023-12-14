@@ -6,11 +6,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-import spacy
+from time import time
 from wordcloud import WordCloud
 
 from sklearn.decomposition import NMF
 from sklearn.feature_extraction.text import TfidfVectorizer
+import spacy
+
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, roc_auc_score
 
 # check the backend and change if required
 import matplotlib as mpl
@@ -226,101 +229,120 @@ train_vec = TfidfVectorizer()
 train_mat = train_vec.fit_transform(train.CleanText)
 
 ## Task 4: Unsupervised Learning - Matrix Factorisation
-
-# Yes, we need to include text / word features from the test set in the input matrix as there may be features in the
+# We should include text / word features from the test set in the input matrix as there may be features in the
 # test set only. If the model comes across new features it hasn't seen before during model training then it won't know
 # how to handle them. This isn't classified as data leakage as we aren't predicting anything and hence not using
 # ground truth labels to help the model learn.
 
 # combine the train and test datasets together to build a Tf-Idf matrix with the entire vocabulary
 train_test = pd.concat([train[['ArticleId', 'Category', 'Text']], test[['ArticleId', 'Text']]])
-# process the raw strings
-_, clean_text = process_text(train_test.Text)
-train_test['CleanText'] = clean_text
-# use the default parameters for now (we'll play with them later)
-train_test_vec = TfidfVectorizer()
-# apply the vectoriser to the combined dataset
-train_test_mat = train_test_vec.fit_transform(train_test.CleanText)
+# count the number of words in each article and remove the top 1%
+train_test['NumWords'] = train_test.Text.apply(lambda x: len(x.split()))
+train_test.NumWords.describe()
+train_test_sub = train_test.loc[train_test.NumWords < top]
+# again has very little impact on the mean/median, but removes all the very long outlying articles
+train_test_sub.NumWords.describe()
 
-# if we take a look at the shape of the resulting matrix, we can see that we have 21,970 tokens across 2,225 articles
+# process the raw strings
+t0 = time()
+_, clean_text = process_text(train_test_sub.Text)
+train_test_sub.loc[:, 'CleanText'] = clean_text
+print("done in %0.3fs." % (time() - t0))
+
+# use the default parameters for now (we'll play with them later)
+tfidf_vec = TfidfVectorizer()
+# apply the vectoriser to the combined dataset
+train_test_mat = tfidf_vec.fit_transform(train_test_sub.CleanText)
+# get the vocab (this is important for identifying the top terms in a topic)
+vocab = np.array(tfidf_vec.get_feature_names_out())
+# vocab = tfidf_vec.vocabulary_  # this is a dictionary representation
+
+# We can see that we have 21,389 tokens across 2,202 articles. If we wanted to reduce the number of terms in the
+# vocabulary, we could filter out terms that only appear in 1 article and/or 95% of articles for example.
+# Note that the number of features in the matrix is the same as the number of terms in the vocabulary
 train_test_mat.shape
 
 # Now we're going to use sklearn's implementation of non-negative matrix factorisation (NMF) to extract the topic
-# structure sklearn's implementation is chosen due to compatibility with the feature generator and the relative
-# simplicity of using other sklearn functions like confusion matrices to assess model performance.
+# structure. NMF decomposes a document feature matrix into two component matrices that are iteratively adjusted until
+# the difference between the original matrix and the product of these component matrices is minimised. What this means
+# for text classification is that each document is represented as a linear combination of topics, and then each
+# document is given the label of the most representative topic. Other matrix factorisation methods include latent
+# semantic analysis (TruncatedSVD in sklearn) or Latent Dirichlet Allocation. Whilst LDA is a popular algorithm, NMF
+# can sometimes produce more coherent topics. The choice of algorithm for this analysis was largely random and the
+# author wanted to try something other than the popular LDA and LSA approaches.
+#
 # Recall that the idea of NMF is to extract an additive model of the topic structure of the corpus. The output is a
 # list of topics, with each topic represented by a list of terms (words in this case).
-# The dimensionality of the problem and hence the runtime can be controlled by the n_samples, n_features and n_topics
-# hyperparameters.
+# The dimensionality of the problem and hence the runtime can be controlled by the number of documents, number of
+# topics (n_components) and the number of features in the vectoriser (max_features).
 
-# we know that there are 5 topics, so we can explicitly set this
-nmf_init = NMF(n_components=5, init='ssdsvda', max_iter=200, random_state=42)
+# we know that there are 5 topics, so we can explicitly specify this
+nmf_init = NMF(n_components=5, init='nndsvda', random_state=42)
+# extract the component matrices
+nmf_W1_document_topics = nmf_init.fit_transform(train_test_mat)
+nmf_H1_topic_terms = nmf_init.components_
+
+# take a look at the top terms from each topic and map them to the known categories
+num_terms = 20
+topic_terms = pd.DataFrame(np.apply_along_axis(lambda x: vocab[(np.argsort(-x))[:num_terms]], 1, nmf_H1_topic_terms))
+topic_terms.reset_index(inplace=True)
+topic_terms.rename(columns={'index': 'Category'}, inplace=True)
+topic_dict = {0: 'sport', 1: 'politics', 2: 'tech', 3: 'entertainment', 4: 'business'}
+topic_terms['Category'] = topic_terms.Category.map(topic_dict)
 
 
-https://scikit-learn.org/0.15/auto_examples/applications/topics_extraction_with_nmf.html
+# Use the model to predict the labels of the train and test set
+def generate_predictions(vectoriser, text_series, model, label_series, topic_dict):
+    vectors = np.array(vectoriser.transform(text_series).todense())
+    preds = model.transform(vectors)
+    pred_df = pd.DataFrame(np.argmax(preds, axis=1).reshape(-1, 1), columns=['Prediction'])
+    pred_df['PredictedLabel'] = pred_df.Prediction.map(topic_dict)
+
+    if label_series is None:
+        pass
+    else:
+        topic_dict_rev = {'sport': 0, 'politics': 1, 'tech': 2, 'entertainment': 3, 'business': 4}
+        pred_df['Actual'] = label_series.map(topic_dict_rev)
+        pred_df['ActualLabel'] = pred_df.Actual.map(topic_dict)
+
+    return pred_df
+
+
+train_preds = generate_predictions(tfidf_vec, train['CleanText'], nmf_init, train['Category'], topic_dict)
+
+# preprocess the test data
+t0 = time()
+_, clean_text = process_text(test.Text)
+test.loc[:, 'CleanText'] = clean_text
+print("done in %0.3fs." % (time() - t0))
+
+test_preds = generate_predictions(tfidf_vec, test['CleanText'], nmf_init, None, topic_dict)
+
+# Calculate and display a confusion matrix and some accuracy metrics like ROC-AUC, F1 and accuracy
+def plot_confusion_matrix(m, k=5):
+    df_cm = pd.DataFrame(m, range(k), range(k))
+    # plt.figure(figsize=(10,7))
+    sns.set(font_scale=1.4)  # for label size
+    sns.heatmap(df_cm, annot=True, annot_kws={"size": 16})  # font size
+    plt.show()
+
+cm = confusion_matrix(y_true=train_preds.ActualLabel, y_pred=train_preds.PredictedLabel, labels=list(topic_dict.values()))
+cm_df = pd.DataFrame(cm, columns=list(topic_dict.values()), index=list(topic_dict.values()))
+sns.heatmap(cm_df, annot=True)
+
+
+
+plot_confusion_matrix(confusion_matrix(y_val_, get_predictions(nmf, X_val_, tvectorizer, topic_dict)))
+
+# Hyperparameter tuning
+- change the objective function
+- change the initialisation method
+- change alpha_W, alpha_H, (alpha_W=alpha_H=0 may improve performance)
+- l1_ratio
+
 https://sandipanweb.wordpress.com/2023/12/06/non-negative-matrix-factorization-to-solve-text-classification-and-recommendation-problems/
 
 
-
-
-Hello there!👋🏻
-
-What’s up, fellow language enthusiasts? Today we’re gonna talk about something that’s super important for anyone dealing with large volumes of text: topic modeling and text classification. It’s all about making sense of the information overload, you know what I mean?
-
-But here’s the thing: doing this manually is a real pain in the neck. That’s where Non-Negative Matrix Factorization (NMF) comes in. It’s a mathematical technique that can help us extract meaningful topics from a bunch of documents and classify them automatically.
-
-And the best part is, NMF doesn’t just save us a ton of time — it can also improve the accuracy of our results. So if you’re tired of slogging through endless piles of text, stick around and let’s dive into how NMF can make your life easier.🚀
-Photo by Egor Myznik on Unsplash
-The Theory Behind NMF
-
-Okay, so let’s get a bit more technical now. Matrix factorization is a technique used in linear algebra to decompose a matrix into a product of two or more matrices. The goal is to simplify the original matrix and extract its underlying structure.
-
-NMF is a specific type of matrix factorization that is particularly useful for non-negative data. It works by decomposing a non-negative matrix into two non-negative matrices: a “basis” matrix and a “weights” matrix. The basis matrix represents the underlying topics or patterns in the data, while the weights matrix represents how strongly each document is associated with those topics.
-
-The mathematical equations involved in NMF can be a bit intimidating, but the basic idea is that we start with a matrix of word frequencies in a set of documents, and then iteratively adjust the basis and weights matrices to minimize the difference between the original matrix and their product. This process converges on a solution that represents the most important topics in the data.
-Photo by Andreas Fickl on Unsplash
-Applications of NMF in Topic Modeling and Text Classification
-
-Now that we understand how NMF works, let’s talk about how it’s used in topic modeling and text classification. The basic idea is to represent each document as a linear combination of topics, where the topics are represented by the columns of the basis matrix.
-
-For example, let’s say we have a set of news articles about politics, sports, and entertainment. We can use NMF to extract the most important topics from these articles, and then classify each article based on which topics it is most strongly associated with. This allows us to automatically categorize large volumes of text without having to read every single document.
-
-NMF can also be used for more advanced applications, such as clustering similar documents together, identifying the most important keywords for each topic, and even generating new text based on existing patterns in the data.
-Photo by ThisisEngineering RAEng on Unsplash
-How to Implement NMF
-
-Implementing NMF can be a bit tricky, especially if you’re not familiar with linear algebra or machine learning. However, there are many software packages and libraries available that can make it easier. Some popular options include scikit-learn and TensorFlow in Python and the NMF package in R.
-
-The basic steps involved in implementing NMF are:
-
-    Preprocess the text data to remove stop words, stem or lemmatize words, and convert the text to a numerical format (e.g. using TF-IDF or bag-of-words).
-    Choose the number of topics you want to extract and initialize the basis and weights matrices.
-    Iteratively update the basis and weights matrices using a cost function that measures the difference between the original matrix and their product.
-    Evaluate the resulting topics and use them to classify new text data.
-
-Case Studies
-
-There have been many case studies that demonstrate the effectiveness of NMF in topic modeling and text classification. For example, one study used NMF to extract topics from a large set of scientific articles and found that it was able to identify important themes more accurately than other methods. Another study used NMF to classify customer reviews of products and found that it outperformed other techniques in terms of accuracy.
-Advantages and Limitations of NMF
-
-The advantages of NMF in topic modeling and text classification are clear: it can save a lot of time and improve the accuracy of results. However, there are also some limitations to consider. For example, NMF can be sensitive to the choice of parameters and initialization, and it may not work as well with very sparse or noisy data.
-
-To address these limitations, it’s important to carefully choose the number of topics and the preprocessing steps used and to experiment with different initializations and cost functions.
-Conclusion
-
-Overall, Non-Negative Matrix Factorization (NMF) is a powerful technique for topic modeling and text classification that can save time and improve the accuracy of results. By representing text data as a matrix and iteratively decomposing it into basis and weights matrices, NMF can extract meaningful topics from large volumes of text and classify documents based on those topics.
-
-Implementing NMF can be challenging, but there are many software packages and libraries available to help. It’s also important to carefully choose the number of topics and preprocessing steps and to experiment with different initializations and cost functions.
-
-NMF has been successfully applied in many case studies, including scientific article analysis and product review classification. While there are limitations to consider, such as sensitivity to parameters and sparse or noisy data, NMF remains a valuable tool for anyone dealing with large volumes of text. So next time you’re faced with a mountain of documents to classify, consider giving NMF a try!
-
-Thanks to all who have read, follow me for interesting articles about machine learning👋🏻😊
-
-
-
-
-
-The default parameters (n_samples / n_features / n_topics) should make the example runnable in a couple of tens of seconds. You can try to increase the dimensions of the problem, but be aware than the time complexity is polynomial.
 
 
 https://www.machinelearningplus.com/spacy-tutorial-nlp/#textpreprocessingwithspacy
