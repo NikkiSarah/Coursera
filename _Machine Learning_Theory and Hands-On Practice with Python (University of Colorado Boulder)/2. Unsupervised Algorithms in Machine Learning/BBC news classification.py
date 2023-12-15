@@ -162,8 +162,6 @@ plt.tight_layout()
 # content and the padding.
 #
 # Here, we're going to follow a more classical approach to pre-processing the text.
-
-
 def process_text(data_series, alphanumeric_tokens = True, single_tokens = False):
     # apply the spacy model to the input text data
     processed_docs = [nlp(text) for text in data_series]
@@ -190,9 +188,11 @@ def process_text(data_series, alphanumeric_tokens = True, single_tokens = False)
 
 
 # convert list to strings
+t0 = time()
 clean_docs, clean_text = process_text(train.Text)
 train['CleanTokens'] = clean_docs
 train['CleanText'] = clean_text
+print("done in %0.3fs." % (time() - t0))
 
 # an example of the original text
 doc_idx = 1489
@@ -277,7 +277,7 @@ train_test_mat.shape
 # topics (n_components) and the number of features in the vectoriser (max_features).
 
 # we know that there are 5 topics, so we can explicitly specify this
-nmf_init = NMF(n_components=5, init='nndsvda', random_state=42)
+nmf_init = NMF(n_components=5, init='nndsvd', random_state=42)
 # extract the component matrices
 nmf_W1_document_topics = nmf_init.fit_transform(train_test_mat)
 nmf_H1_topic_terms = nmf_init.components_
@@ -292,23 +292,45 @@ topic_terms['Category'] = topic_terms.Category.map(topic_dict)
 
 
 # Use the model to predict the labels of the train and test set
-def generate_predictions(vectoriser, text_series, model, label_series, topic_dict):
-    vectors = np.array(vectoriser.transform(text_series).todense())
+def generate_predictions(vectoriser, df, text_col, model, label_col, topic_dict):
+    vectors = np.array(vectoriser.transform(df[text_col]).todense())
     preds = model.transform(vectors)
-    pred_df = pd.DataFrame(np.argmax(preds, axis=1).reshape(-1, 1), columns=['Prediction'])
-    pred_df['PredictedLabel'] = pred_df.Prediction.map(topic_dict)
+    pred_df = pd.DataFrame(np.argmax(preds, axis=1).reshape(-1, 1), columns=['Predicted'])
+    pred_df['PredictedLabel'] = pred_df.Predicted.map(topic_dict)
+    pred_df['ArticleID'] = df['ArticleId']
 
-    if label_series is None:
+    if label_col is None:
         pass
     else:
         topic_dict_rev = {'sport': 0, 'politics': 1, 'tech': 2, 'entertainment': 3, 'business': 4}
-        pred_df['Actual'] = label_series.map(topic_dict_rev)
+        pred_df['Actual'] = df[label_col].map(topic_dict_rev)
         pred_df['ActualLabel'] = pred_df.Actual.map(topic_dict)
 
     return pred_df
 
 
-train_preds = generate_predictions(tfidf_vec, train['CleanText'], nmf_init, train['Category'], topic_dict)
+train_preds = generate_predictions(tfidf_vec, train, 'CleanText', nmf_init, 'Category', topic_dict)
+
+# Calculate and display a confusion matrix and some accuracy metrics like F1 and accuracy
+def plot_confusion_matrix(true_labels, predicted_labels, topic_dictionary):
+    cm = confusion_matrix(y_true=true_labels, y_pred=predicted_labels)
+    cm_df = pd.DataFrame(cm, columns=topic_dictionary, index=topic_dictionary)
+    # cm_df = pd.DataFrame(cm, columns=topic_dictionary, index=topic_dictionary)
+    ax = sns.heatmap(cm_df, annot=True, fmt=".0f", cbar=False, cmap="Greens")
+    ax.set(xlabel="Predicted Label", ylabel="True Label",
+           title='Non-Negative Matrix Factorisation Training Data Confusion Matrix')
+
+# It looks like the algorithm does pretty well. Accuracy is around 92% on the training data. The problem areas are
+# mistaking business articles for politics and tech articles, and a little bit surprisingly, entertainment articles for
+# tech articles. When submitted to the kaggle platform, accuracy increased slightly to around 93%, confirming that the
+# article was doing reasonably well.
+plot_confusion_matrix(train_preds.Actual, train_preds.Predicted, list(topic_dict.values()))
+
+accuracy = accuracy_score(train_preds.Actual, train_preds.Predicted)
+accuracy
+
+f1 = f1_score(train_preds.Actual, train_preds.Predicted, average='weighted')
+f1
 
 # preprocess the test data
 t0 = time()
@@ -316,23 +338,112 @@ _, clean_text = process_text(test.Text)
 test.loc[:, 'CleanText'] = clean_text
 print("done in %0.3fs." % (time() - t0))
 
-test_preds = generate_predictions(tfidf_vec, test['CleanText'], nmf_init, None, topic_dict)
-
-# Calculate and display a confusion matrix and some accuracy metrics like ROC-AUC, F1 and accuracy
-def plot_confusion_matrix(m, k=5):
-    df_cm = pd.DataFrame(m, range(k), range(k))
-    # plt.figure(figsize=(10,7))
-    sns.set(font_scale=1.4)  # for label size
-    sns.heatmap(df_cm, annot=True, annot_kws={"size": 16})  # font size
-    plt.show()
-
-cm = confusion_matrix(y_true=train_preds.ActualLabel, y_pred=train_preds.PredictedLabel, labels=list(topic_dict.values()))
-cm_df = pd.DataFrame(cm, columns=list(topic_dict.values()), index=list(topic_dict.values()))
-sns.heatmap(cm_df, annot=True)
+test_preds = generate_predictions(tfidf_vec, test, 'CleanText', nmf_init, None, topic_dict)
+kaggle_submission = test_preds.loc[:, ['ArticleID', 'PredictedLabel']]
+kaggle_submission.columns=['ArticleId', 'Category']
+kaggle_submission.to_csv('kaggle_submission.csv', index=False)
 
 
+## Task 5: Hyperparameter Tuning
+# However, can we do even better. We'll use a grid search approach to test whether changing some of the hyperparameters
+# improves performance. The hyperparameters will include the initialisation method, the solver, the beta divergence
+# method, W and H regularisation, and regularisation mixing.
+param_grid = {'init': ('random', 'nndsvd', 'nndsvda', 'nndsvdar'),
+              'solver': ('cd', 'mu'),
+              'beta_loss': ('frobenius', 'kullback-leibler'),
+              'alpha_W': [0, 0.0001, 0.001, 0.01, 0.1, 1],
+              'alpha_H': ['same', 0, 0.0001, 0.001, 0.01, 0.1, 1],
+              'l1_ratio': [0, 0.25, 0.5, 0.75, 1]}
 
-plot_confusion_matrix(confusion_matrix(y_val_, get_predictions(nmf, X_val_, tvectorizer, topic_dict)))
+t0 = time()
+
+param_list = []
+acc_list = []
+f1_list = []
+
+for init in param_grid['init']:
+    for solver in param_grid['solver']:
+        for loss in param_grid['beta_loss']:
+            for aW in param_grid['alpha_W']:
+                if (solver == 'cd' and loss == 'kullback-leibler') or (solver == 'mu' and init == 'nndsvd'):
+                    pass
+                else:
+                    params = [init, solver, loss, aW]
+                    print(params)
+                    nmf_tuned = NMF(n_components=5, init=init, solver=solver, beta_loss=loss, random_state=42,
+                                    alpha_W=aW)
+                    nmf_tuned.fit(train_test_mat)
+
+                    vectors = np.array(tfidf_vec.transform(train['CleanText']).todense())
+                    preds = nmf_tuned.transform(vectors)
+                    pred_df = pd.DataFrame(np.argmax(preds, axis=1).reshape(-1, 1), columns=['Predicted'])
+                    pred_df['ArticleID'] = train['ArticleId']
+                    pred_df['ActualLabel'] = train['Category']
+                    pred_df['Text'] = train['CleanText']
+                    pred_df['PredictedLabel'] = pred_df.Predicted.map(topic_dict)
+
+                    train_acc = accuracy_score(pred_df['ActualLabel'], pred_df['PredictedLabel'])
+                    train_f1 = f1_score(pred_df['ActualLabel'], pred_df['PredictedLabel'], average='weighted')
+
+                    param_list.append(params)
+                    acc_list.append(train_acc)
+                    f1_list.append(train_f1)
+
+results = pd.DataFrame(data={'hyperparameters': param_list, 'accuracy_score': acc_list, 'f1_list': f1_list})
+results.sort_values(by='accuracy_score', inplace=True, ascending=False)
+
+    vectors = np.array(tfidf_vec.transform(test['CleanText']).todense())
+    preds = nmf_tuned.transform(vectors)
+    test_pred_df = pd.DataFrame(np.argmax(preds, axis=1).reshape(-1, 1), columns=['Predicted'])
+    test_pred_df['ArticleID'] = test['ArticleId']
+    test_pred_df['Text'] = test['CleanText']
+    test_pred_df['PredictedLabel'] = test_pred_df.Predicted.map(topic_dict)
+
+
+
+    train_preds = generate_predictions(tfidf_vec, train, 'CleanText', nmf_tuned, 'Category',
+                                       topic_dict)
+
+
+    for solver in param_grid['solver']:
+        for loss in param_grid['beta_loss']:
+            for aW in param_grid['alpha_W']:
+                for aH in param_grid['alpha_H']:
+                    for l1 in param_grid['l1_ratio']:
+                        params = [init, solver, loss, aW, aH, l1]
+                        nmf_tuned = NMF(n_components=5, init=init, solver=solver, beta_loss=loss, random_state=42,
+                                        alpha_W=aW, alpha_H=aH, l1_ratio=l1)
+                        nmf_tuned.fit(train_test_mat)
+                        train_preds = generate_predictions(tfidf_vec, train, 'CleanText', nmf_tuned, 'Category',
+                                                           topic_dict)
+print("done in %0.3fs." % (time() - t0))
+
+
+
+acc_df = pd.DataFrame(columns=['alpha_W', 'alpha_H', 'accuracy'])
+i = 0
+for aW in [0, 0.0001, 0.001]:
+    for aH in [0, 0.0001, 0.001]:
+        nmf = decomposition.NMF(n_components=k, random_state=0,
+                                init="nndsvda", beta_loss="frobenius",
+                                alpha_W=aW, alpha_H=aH)
+
+        nmf.fit(vectors)
+        acc = compute_pred_accuracy(y_val_, get_predictions(nmf, X_val_, tvectorizer, topic_dict))
+        acc_df = acc_df.append({'alpha_W': aW, 'alpha_H': aH, 'accuracy': acc}, ignore_index=True)
+# acc_df.head(10)
+acc_df = acc_df.pivot(index='alpha_W', columns='alpha_H', values='accuracy')
+acc_df.head()
+
+clf = GridSearchCV(nmf_init, param_grid)
+clf.fit(train_test_mat, train.Category)
+
+# extract the component matrices
+nmf_W1_document_topics = nmf_init.fit_transform(train_test_mat)
+nmf_H1_topic_terms = nmf_init.components_
+
+
+
 
 # Hyperparameter tuning
 - change the objective function
