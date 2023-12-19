@@ -39,7 +39,7 @@ ArticleId,Category
 383,business
 1581,entertainment
 2167,entertainment
-1593,politics
+1593,entertainment
 1849,politics
 1691,entertainment
 2033,tech
@@ -56,7 +56,7 @@ ArticleId,Category
 671,tech
 1193,politics
 2104,tech
-872,entertainment
+872,tech
 606,sport
 1502,tech
 244,sport
@@ -89,8 +89,8 @@ ArticleId,Category
 333,entertainment
 786,business
 1775,tech
-558,business
-592,tech
+558,entertainment
+592,politics
 2172,sport
 1735,tech
 1188,sport
@@ -152,7 +152,7 @@ ArticleId,Category
 708,business
 515,tech
 118,politics
-1513,tech
+1513,entertainment
 1227,sport
 1196,sport
 635,sport
@@ -237,7 +237,7 @@ ArticleId,Category
 353,politics
 1666,sport
 1457,business
-2182,business
+2182,politics
 1591,politics
 1643,sport
 1822,politics
@@ -267,7 +267,7 @@ ArticleId,Category
 582,sport
 1845,politics
 965,tech
-1461,business
+1461,tech
 945,sport
 746,business
 1768,sport
@@ -445,7 +445,7 @@ ArticleId,Category
 336,sport
 719,tech
 1563,entertainment
-963,business
+963,entertainment
 179,business
 1438,politics
 1189,entertainment
@@ -462,7 +462,7 @@ ArticleId,Category
 172,sport
 1918,politics
 938,tech
-752,business
+752,tech
 2222,politics
 2038,business
 24,sport
@@ -497,9 +497,9 @@ ArticleId,Category
 1068,business
 1116,politics
 869,sport
-1703,politics
+1703,business
 1668,tech
-501,business
+501,tech
 2053,business
 908,politics
 1306,sport
@@ -535,10 +535,10 @@ ArticleId,Category
 109,sport
 235,tech
 162,politics
-2071,business
+2071,tech
 412,business
 1092,sport
-1352,business
+1352,tech
 294,politics
 1973,business
 493,tech
@@ -609,7 +609,7 @@ ArticleId,Category
 921,entertainment
 404,business
 422,sport
-503,business
+503,entertainment
 1773,sport
 2174,tech
 1086,business
@@ -629,7 +629,7 @@ ArticleId,Category
 1859,sport
 524,politics
 463,tech
-1085,business
+1085,tech
 668,tech
 2132,business
 1970,sport
@@ -662,7 +662,7 @@ ArticleId,Category
 745,business
 421,business
 2068,business
-1145,business
+1145,entertainment
 681,business
 556,entertainment
 1063,tech
